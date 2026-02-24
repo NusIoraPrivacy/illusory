@@ -1,0 +1,107 @@
+Integrated Gradient
+https://arxiv.org/abs/1703.01365
+https://captum.ai/
+
+Visual Pattern Detection
+
+To attribute effects on image pixels (instead of embeddings), you can indeed apply Integrated Gradients directly in pixel space—by treating the raw image tensor as the input for IG and stepping through baseline→image. Here's a refined Python snippet doing exactly that with Qwen‑VL + Captum:
+
+import torch
+from captum.attr import IntegratedGradients
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from PIL import Image
+import torchvision.transforms as T
+import matplotlib.pyplot as plt
+
+# 1. Load Qwen‑VL
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-VL", trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen-VL", trust_remote_code=True, device_map="cuda").eval()
+
+# 2. Preprocess image into raw pixel tensor (shape [1,3,H,W], float 0–1)
+img = Image.open("path/to/image.jpg").convert("RGB")
+pre = T.Compose([T.Resize((448,448)), T.ToTensor()])
+img_tensor = pre(img).unsqueeze(0).to(model.device)
+
+# Store pixel baseline (e.g. black image or blurred variant)
+baseline = torch.zeros_like(img_tensor)  # or Gaussian noise / blurred image
+
+# 3. Tokenize prompt
+prompt = "What is in the image?"
+inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+
+# 4. Forward that returns logit for target token, given pixel input
+def forward_pixels(img_in):
+    # run image through visual encoder
+    v = model.visual_encoder(img_in, return_dict=True).last_hidden_state
+    # feed into LLM
+    out = model(vision_embeds=v, input_ids=inputs.input_ids, attention_mask=inputs.attention_mask)
+    # return logit for predicted next token
+    tok = out.logits[:, -1, :].argmax(dim=-1)
+    return out.logits[:, -1, tok]
+
+# 5. Apply Integrated Gradients on pixels
+ig = IntegratedGradients(forward_pixels)
+attr, delta = ig.attribute(
+    img_tensor,
+    baselines=baseline,
+    return_convergence_delta=True,
+    n_steps=50  # adjust steps as needed
+)
+
+print("Convergence delta:", delta.item())
+
+# 6. Visualize attribution heatmap
+attr_map = attr.squeeze().abs().sum(dim=0).cpu()
+plt.imshow(attr_map, cmap="hot")
+plt.title("Pixel-level IG Attribution")
+plt.axis("off")
+plt.show()
+
+Text Tasks
+
+Apply Integrated Gradients to text ids or embeddings. Below is a code for reference to obtain attributions for each token:
+
+import torch
+from transformers import BertTokenizer, BertForSequenceClassification
+from captum.attr import LayerIntegratedGradients
+
+# Load model
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+model = BertForSequenceClassification.from_pretrained("bert-base-uncased")
+model.eval()
+
+# Text example
+text = "I absolutely loved the movie!"
+inputs = tokenizer(text, return_tensors="pt")
+input_ids = inputs.input_ids
+baseline_ids = input_ids * 0  # [CLS] + PADs baseline
+
+# Attribution with respect to embeddings
+lig = LayerIntegratedGradients(model, model.bert.embeddings.word_embeddings)
+attributions, delta = lig.attribute(
+    inputs=input_ids,
+    baselines=baseline_ids,
+    target=1,  # positive sentiment
+    return_convergence_delta=True,
+    n_steps=50
+)
+
+# Aggregate per-token attributions
+token_attributions = attributions.sum(dim=-1).squeeze(0)
+tokens = tokenizer.convert_ids_to_tokens(input_ids[0])
+for token, score in zip(tokens, token_attributions.detach().cpu().numpy()):
+    print(f"{token:>10}: {score:.4f}")
+print("Convergence delta:", delta.item())
+
+Attention Rollout
+https://arxiv.org/abs/2005.00928
+https://caoxuanhao0.github.io/Blog-Explainability-in-transformer-based-model
+
+
+
+Code: https://github.com/BoCtrl-C/attention-rollout
+
+ContextCite
+https://proceedings.neurips.cc/paper_files/paper/2024/hash/adbea136219b64db96a9941e4249a857-Abstract-Conference.html
+
+Code: https://github.com/MadryLab/context-cite

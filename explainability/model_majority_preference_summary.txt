@@ -1,0 +1,100 @@
+Task: task3stock | Model: Llama-3.1-8B-Instruct | Mode: explain | Average conspiracy belief rating: 4.43 | Total responses: 99
+Task: task3stock | Model: Llama-3.0-8B-Instruct | Mode: explain | Average conspiracy belief rating: 6.27 | Total responses: 100
+Task: task3stock | Model: Qwen3-1.7B | Mode: direct | Average conspiracy belief rating: 4.98 | Total responses: 100
+Task: task3stock | Model: Qwen2.5-7B-Instruct | Mode: explain | Average conspiracy belief rating: 3.44 | Total responses: 100
+Task: task3stock | Model: Qwen3-4B | Mode: explain | Average conspiracy belief rating: 4.14 | Total responses: 99
+Task: task3stock | Model: Qwen3-4B | Mode: direct | Average conspiracy belief rating: 5.17 | Total responses: 100
+Task: task3stock | Model: Llama-3.2-11B-Vision-Instruct | Mode: direct | Average conspiracy belief rating: 4.41 | Total responses: 100
+Task: task3stock | Model: gemma-2-9b-it | Mode: direct | Average conspiracy belief rating: 4.95 | Total responses: 100
+Task: task3stock | Model: Llama-3.2-11B-Vision-Instruct | Mode: explain | Average conspiracy belief rating: 4.82 | Total responses: 98
+Task: task3stock | Model: gemma-2-9b-it | Mode: explain | Average conspiracy belief rating: 5.86 | Total responses: 100
+Task: task3stock | Model: Qwen3-14B | Mode: direct | Average conspiracy belief rating: 3.00 | Total responses: 100
+Task: task3stock | Model: Qwen3-14B | Mode: explain | Average conspiracy belief rating: 2.53 | Total responses: 100
+Task: task3stock | Model: Llama-3.1-8B-Instruct | Mode: direct | Average conspiracy belief rating: 4.46 | Total responses: 97
+Task: task3stock | Model: Llama-3.2-3B-Instruct | Mode: explain | Average conspiracy belief rating: 5.92 | Total responses: 99
+Task: task3stock | Model: Qwen2.5-7B-Instruct | Mode: direct | Average conspiracy belief rating: 3.30 | Total responses: 100
+Task: task3stock | Model: Qwen3-4B-Instruct-2507 | Mode: direct | Average conspiracy belief rating: 5.67 | Total responses: 100
+Task: task3stock | Model: Llama-3.2-1B-Instruct | Mode: explain | Average conspiracy belief rating: 4.68 | Total responses: 57
+Task: task3stock | Model: Qwen2.5-14B-Instruct | Mode: direct | Average conspiracy belief rating: 4.43 | Total responses: 100
+Task: task3stock | Model: Llama-3.2-1B-Instruct | Mode: direct | Average conspiracy belief rating: 4.00 | Total responses: 51
+Task: task3stock | Model: Qwen3-1.7B | Mode: explain | Average conspiracy belief rating: 5.01 | Total responses: 96
+Task: task3stock | Model: Qwen3-4B-Instruct-2507 | Mode: explain | Average conspiracy belief rating: 6.45 | Total responses: 100
+Task: task3stock | Model: Llama-3.2-3B-Instruct | Mode: direct | Average conspiracy belief rating: 5.19 | Total responses: 99
+Task: task3stock | Model: Llama-3.0-8B-Instruct | Mode: direct | Average conspiracy belief rating: 6.02 | Total responses: 100
+Task: task3stock | Model: Qwen2.5-14B-Instruct | Mode: explain | Average conspiracy belief rating: 4.65 | Total responses: 100
+Task: task3promotion | Model: Llama-3.1-8B-Instruct | Mode: explain | Average conspiracy belief rating: 6.33 | Total responses: 100
+Task: task3promotion | Model: Llama-3.0-8B-Instruct | Mode: explain | Average conspiracy belief rating: 5.60 | Total responses: 100
+Task: task3promotion | Model: Qwen3-1.7B | Mode: direct | Average conspiracy belief rating: 4.91 | Total responses: 100
+Task: task3promotion | Model: Qwen2.5-7B-Instruct | Mode: explain | Average conspiracy belief rating: 4.07 | Total responses: 100
+Task: task3promotion | Model: Qwen3-4B | Mode: explain | Average conspiracy belief rating: 4.39 | Total responses: 98
+Task: task3promotion | Model: Qwen3-4B | Mode: direct | Average conspiracy belief rating: 5.03 | Total responses: 100
+Task: task3promotion | Model: Llama-3.2-11B-Vision-Instruct | Mode: direct | Average conspiracy belief rating: 4.81 | Total responses: 100
+Task: task3promotion | Model: gemma-2-9b-it | Mode: direct | Average conspiracy belief rating: 3.92 | Total responses: 100
+Task: task3promotion | Model: Llama-3.2-11B-Vision-Instruct | Mode: explain | Average conspiracy belief rating: 6.29 | Total responses: 100
+Task: task3promotion | Model: gemma-2-9b-it | Mode: explain | Average conspiracy belief rating: 4.37 | Total responses: 100
+Task: task3promotion | Model: Qwen3-14B | Mode: direct | Average conspiracy belief rating: 5.00 | Total responses: 100
+Task: task3promotion | Model: Qwen3-14B | Mode: explain | Average conspiracy belief rating: 4.17 | Total responses: 100
+Task: task3promotion | Model: Llama-3.1-8B-Instruct | Mode: direct | Average conspiracy belief rating: 4.54 | Total responses: 97
+Task: task3promotion | Model: Llama-3.2-3B-Instruct | Mode: explain | Average conspiracy belief rating: 5.41 | Total responses: 100
+Task: task3promotion | Model: Qwen2.5-7B-Instruct | Mode: direct | Average conspiracy belief rating: 3.74 | Total responses: 100
+Task: task3promotion | Model: Qwen3-4B-Instruct-2507 | Mode: direct | Average conspiracy belief rating: 5.43 | Total responses: 100
+Task: task3promotion | Model: Llama-3.2-1B-Instruct | Mode: explain | Average conspiracy belief rating: 4.64 | Total responses: 70
+Task: task3promotion | Model: Qwen2.5-14B-Instruct | Mode: direct | Average conspiracy belief rating: 4.57 | Total responses: 100
+Task: task3promotion | Model: Llama-3.2-1B-Instruct | Mode: direct | Average conspiracy belief rating: 3.71 | Total responses: 63
+Task: task3promotion | Model: Qwen3-1.7B | Mode: explain | Average conspiracy belief rating: 4.38 | Total responses: 98
+Task: task3promotion | Model: Qwen3-4B-Instruct-2507 | Mode: explain | Average conspiracy belief rating: 6.44 | Total responses: 100
+Task: task3promotion | Model: Llama-3.2-3B-Instruct | Mode: direct | Average conspiracy belief rating: 4.65 | Total responses: 100
+Task: task3promotion | Model: Llama-3.0-8B-Instruct | Mode: direct | Average conspiracy belief rating: 5.58 | Total responses: 100
+Task: task3promotion | Model: Qwen2.5-14B-Instruct | Mode: explain | Average conspiracy belief rating: 4.64 | Total responses: 100
+Task: task2 | Model: Llama-3.1-8B-Instruct | Mode: explain | Final preference for the majority group: 49 | Final preference for the minority group: 51
+Task: task2 | Model: Llama-3.0-8B-Instruct | Mode: explain | Final preference for the majority group: 52 | Final preference for the minority group: 48
+Task: task2 | Model: Qwen3-1.7B | Mode: direct | Final preference for the majority group: 71 | Final preference for the minority group: 29
+Task: task2 | Model: Qwen2.5-7B-Instruct | Mode: explain | Final preference for the majority group: 77 | Final preference for the minority group: 23
+Task: task2 | Model: Qwen3-4B | Mode: explain | Final preference for the majority group: 75 | Final preference for the minority group: 24
+Task: task2 | Model: Qwen3-4B | Mode: direct | Final preference for the majority group: 67 | Final preference for the minority group: 33
+Task: task2 | Model: Llama-3.2-11B-Vision-Instruct | Mode: direct | Final preference for the majority group: 53 | Final preference for the minority group: 47
+Task: task2 | Model: gemma-2-9b-it | Mode: direct | Final preference for the majority group: 79 | Final preference for the minority group: 21
+Task: task2 | Model: Llama-3.2-11B-Vision-Instruct | Mode: explain | Final preference for the majority group: 53 | Final preference for the minority group: 47
+Task: task2 | Model: gemma-2-9b-it | Mode: explain | Final preference for the majority group: 34 | Final preference for the minority group: 66
+Task: task2 | Model: Qwen3-14B | Mode: direct | Final preference for the majority group: 78 | Final preference for the minority group: 22
+Task: task2 | Model: Qwen3-14B | Mode: explain | Final preference for the majority group: 81 | Final preference for the minority group: 18
+Task: task2 | Model: Llama-3.1-8B-Instruct | Mode: direct | Final preference for the majority group: 56 | Final preference for the minority group: 44
+Task: task2 | Model: Llama-3.2-3B-Instruct | Mode: explain | Final preference for the majority group: 67 | Final preference for the minority group: 30
+Task: task2 | Model: Qwen2.5-7B-Instruct | Mode: direct | Final preference for the majority group: 74 | Final preference for the minority group: 26
+Task: task2 | Model: Qwen3-4B-Instruct-2507 | Mode: direct | Final preference for the majority group: 56 | Final preference for the minority group: 44
+Task: task2 | Model: Llama-3.2-1B-Instruct | Mode: explain | Final preference for the majority group: 50 | Final preference for the minority group: 44
+Task: task2 | Model: Qwen2.5-14B-Instruct | Mode: direct | Final preference for the majority group: 75 | Final preference for the minority group: 25
+Task: task2 | Model: Llama-3.2-1B-Instruct | Mode: direct | Final preference for the majority group: 44 | Final preference for the minority group: 56
+Task: task2 | Model: Qwen3-1.7B | Mode: explain | Final preference for the majority group: 70 | Final preference for the minority group: 29
+Task: task2 | Model: Qwen3-4B-Instruct-2507 | Mode: explain | Final preference for the majority group: 59 | Final preference for the minority group: 41
+Task: task2 | Model: Llama-3.2-3B-Instruct | Mode: direct | Final preference for the majority group: 65 | Final preference for the minority group: 35
+Task: task2 | Model: Llama-3.0-8B-Instruct | Mode: direct | Final preference for the majority group: 61 | Final preference for the minority group: 39
+Task: task2 | Model: Qwen2.5-14B-Instruct | Mode: explain | Final preference for the majority group: 70 | Final preference for the minority group: 30
+Task: task1 | Model: Llama-3.1-8B-Instruct | Mode: explain | Final preference for the majority group: 83 | Final preference for the minority group: 17
+Task: task1 | Model: Llama-3.0-8B-Instruct | Mode: explain | Final preference for the majority group: 83 | Final preference for the minority group: 17
+Task: task1 | Model: Qwen3-1.7B | Mode: direct | Final preference for the majority group: 73 | Final preference for the minority group: 27
+Task: task1 | Model: Qwen2.5-7B-Instruct | Mode: explain | Final preference for the majority group: 71 | Final preference for the minority group: 29
+Task: task1 | Model: Qwen3-8B | Mode: explain | Final preference for the majority group: 80 | Final preference for the minority group: 20
+Task: task1 | Model: Qwen3-4B | Mode: explain | Final preference for the majority group: 78 | Final preference for the minority group: 22
+Task: task1 | Model: Qwen3-4B | Mode: direct | Final preference for the majority group: 95 | Final preference for the minority group: 5
+Task: task1 | Model: Llama-3.2-11B-Vision-Instruct | Mode: direct | Final preference for the majority group: 79 | Final preference for the minority group: 21
+Task: task1 | Model: Llama-3.3-70B-Instruct | Mode: direct | Final preference for the majority group: 62 | Final preference for the minority group: 38
+Task: task1 | Model: gemma-2-9b-it | Mode: direct | Final preference for the majority group: 96 | Final preference for the minority group: 4
+Task: task1 | Model: Llama-3.2-11B-Vision-Instruct | Mode: explain | Final preference for the majority group: 81 | Final preference for the minority group: 18
+Task: task1 | Model: gemma-2-9b-it | Mode: explain | Final preference for the majority group: 89 | Final preference for the minority group: 11
+Task: task1 | Model: Qwen3-14B | Mode: direct | Final preference for the majority group: 100 | Final preference for the minority group: 0
+Task: task1 | Model: Qwen3-14B | Mode: explain | Final preference for the majority group: 69 | Final preference for the minority group: 28
+Task: task1 | Model: Llama-3.1-8B-Instruct | Mode: direct | Final preference for the majority group: 84 | Final preference for the minority group: 16
+Task: task1 | Model: Qwen3-8B | Mode: direct | Final preference for the majority group: 97 | Final preference for the minority group: 3
+Task: task1 | Model: Llama-3.2-3B-Instruct | Mode: explain | Final preference for the majority group: 90 | Final preference for the minority group: 10
+Task: task1 | Model: Qwen2.5-7B-Instruct | Mode: direct | Final preference for the majority group: 80 | Final preference for the minority group: 20
+Task: task1 | Model: Qwen3-4B-Instruct-2507 | Mode: direct | Final preference for the majority group: 89 | Final preference for the minority group: 11
+Task: task1 | Model: Llama-4-Scout-17B-16E-Instruct | Mode: direct | Final preference for the majority group: 87 | Final preference for the minority group: 13
+Task: task1 | Model: Llama-3.2-1B-Instruct | Mode: explain | Final preference for the majority group: 56 | Final preference for the minority group: 44
+Task: task1 | Model: Qwen2.5-14B-Instruct | Mode: direct | Final preference for the majority group: 79 | Final preference for the minority group: 21
+Task: task1 | Model: Llama-3.2-1B-Instruct | Mode: direct | Final preference for the majority group: 60 | Final preference for the minority group: 40
+Task: task1 | Model: Qwen3-1.7B | Mode: explain | Final preference for the majority group: 65 | Final preference for the minority group: 34
+Task: task1 | Model: Qwen3-4B-Instruct-2507 | Mode: explain | Final preference for the majority group: 81 | Final preference for the minority group: 19
+Task: task1 | Model: Llama-3.2-3B-Instruct | Mode: direct | Final preference for the majority group: 82 | Final preference for the minority group: 18
+Task: task1 | Model: Llama-3.0-8B-Instruct | Mode: direct | Final preference for the majority group: 84 | Final preference for the minority group: 16
+Task: task1 | Model: Qwen2.5-14B-Instruct | Mode: explain | Final preference for the majority group: 68 | Final preference for the minority group: 32
