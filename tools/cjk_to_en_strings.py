@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Translate Chinese in Python string literals and docstrings (libcst + deep_translator)."""
+"""Translate Chinese in Python string literals / docstrings / f-string text (libcst + MyMemory API)."""
 from __future__ import annotations
 
 import ast
@@ -7,26 +7,46 @@ import json
 import re
 import sys
 import time
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 import libcst as cst
 
 REPO = Path(__file__).resolve().parents[1]
 SKIP_DIRS = frozenset({".git", "__pycache__", ".venv", "venv", "node_modules"})
-
-try:
-    from deep_translator import GoogleTranslator
-except ImportError:
-    print("Install: pip install deep-translator libcst", file=sys.stderr)
-    raise
-
-_translator = GoogleTranslator(source="zh-CN", target="en")
-_cache: dict[str, str] = {}
+_MAX_Q = 480
 _CJK = re.compile(r"[\u4e00-\u9fff]")
-_TWO_CHAR_PREFIX = frozenset(
+_two = frozenset(
     {"fr", "Fr", "fR", "FR", "rf", "Rf", "rF", "RF", "br", "Br", "bR", "BR", "rb", "Rb", "rB", "RB"}
 )
-_ONE_CHAR_PREFIX = frozenset("rRuUbBfFUu")
+_one = frozenset("rRuUbBfFUu")
+
+_cache: dict[str, str] = {}
+
+
+def translate_mymemory_fragment(text: str) -> str:
+    text = text.strip()
+    if not text:
+        return text
+    if text in _cache:
+        return _cache[text]
+    q = urllib.parse.quote(text[:2000])
+    url = f"https://api.mymemory.translated.net/get?q={q}&langpair=zh-CN|en"
+    for attempt in range(5):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "illusory-cjk-translate/1.0"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode())
+            out = (data.get("responseData") or {}).get("translatedText") or text
+            _cache[text] = out
+            time.sleep(0.12)
+            return out
+        except Exception as e:
+            print(f"[warn] translate attempt {attempt}: {e!r}", file=sys.stderr)
+            time.sleep(1.5 * (attempt + 1))
+    _cache[text] = text
+    return text
 
 
 def translate_text(s: str) -> str:
@@ -34,37 +54,46 @@ def translate_text(s: str) -> str:
         return s
     if s in _cache:
         return _cache[s]
-    out = s
-    for attempt in range(4):
-        try:
-            out = _translator.translate(s)
-            break
-        except Exception as e:
-            print(f"[warn] translate ({attempt}): {e!r}", file=sys.stderr)
-            time.sleep(1.5 * (attempt + 1))
+    # Chunk long strings for URL safety and API limits
+    if len(s) <= _MAX_Q and s.count("\n") < 40:
+        out = translate_mymemory_fragment(s)
+        _cache[s] = out
+        return out
+    parts: list[str] = []
+    buf = ""
+    for line in s.split("\n"):
+        if len(buf) + len(line) + 1 > _MAX_Q and buf:
+            parts.append(buf)
+            buf = line
+        else:
+            buf = (buf + "\n" + line) if buf else line
+    if buf:
+        parts.append(buf)
+    merged = []
+    for p in parts:
+        merged.append(translate_mymemory_fragment(p) if _CJK.search(p) else p)
+    out = "\n".join(merged)
     _cache[s] = out
-    time.sleep(0.08)
     return out
 
 
-def split_string_literal(raw: str) -> tuple[str, str, bool, bool]:
-    """Return (prefix, quote_triple_or_single, is_triple, prefer_double_for_triple)."""
-    if len(raw) >= 2 and raw[:2] in _TWO_CHAR_PREFIX:
+def split_string_literal(raw: str) -> tuple[str, bool, bool]:
+    if len(raw) >= 2 and raw[:2] in _two:
         pfx, rest = raw[:2], raw[2:]
-    elif raw and raw[0] in _ONE_CHAR_PREFIX:
+    elif raw and raw[0] in _one:
         pfx, rest = raw[:1], raw[1:]
     else:
         pfx, rest = "", raw
 
     if rest.startswith('"""'):
-        return pfx, '"""', True, True
+        return pfx, True, True
     if rest.startswith("'''"):
-        return pfx, "'''", True, False
+        return pfx, True, False
     if rest.startswith('"'):
-        return pfx, '"', False, True
+        return pfx, False, True
     if rest.startswith("'"):
-        return pfx, "'", False, False
-    raise ValueError(f"Bad string literal start: {raw[:40]!r}")
+        return pfx, False, False
+    raise ValueError(f"Bad string literal: {raw[:50]!r}")
 
 
 def encode_simple_inner(new_inner: str, *, is_triple: bool, prefer_double: bool) -> str:
@@ -81,7 +110,7 @@ def encode_simple_inner(new_inner: str, *, is_triple: bool, prefer_double: bool)
 
 def rebuild_simple_string(node: cst.SimpleString, new_inner: str) -> cst.SimpleString:
     raw = node.value
-    pfx, _q, is_triple, prefer_double = split_string_literal(raw)
+    pfx, is_triple, prefer_double = split_string_literal(raw)
     encoded = encode_simple_inner(new_inner, is_triple=is_triple, prefer_double=prefer_double)
     return node.with_changes(value=pfx + encoded)
 
@@ -103,7 +132,7 @@ class TranslateStrings(cst.CSTTransformer):
         try:
             return rebuild_simple_string(updated_node, new_inner)
         except Exception as e:
-            print(f"[warn] rebuild string failed: {e}", file=sys.stderr)
+            print(f"[warn] rebuild SimpleString failed: {e}", file=sys.stderr)
             return updated_node
 
     def leave_FormattedStringText(
@@ -142,7 +171,7 @@ def main() -> int:
             continue
         if process_file(path):
             changed += 1
-            print(path.relative_to(REPO))
+            print(path.relative_to(REPO), flush=True)
     print(f"Modified {changed} files.", file=sys.stderr)
     return 0
 
