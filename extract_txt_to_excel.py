@@ -6,10 +6,8 @@ from pathlib import Path
 MIN_CYCLE_COUNT = 90  # Allow files with slightly fewer than 100 cycles
 
 def extract_role_and_cot_from_filename(filename: str):
-    """
-    从文件名中提取role和cot信息
-    返回: (role, cot) 如果找到，否则返回 (None, None)
-    """
+    """Extract role and cot information from filenames
+    Returns: (role, cot) If found, otherwise returns (None, None)"""
     # Regex: _role_(.+?)_cot_(\d+)
     role_match = re.search(r'_role_(.+?)_cot_(\d+)', filename)
     if role_match:
@@ -19,10 +17,8 @@ def extract_role_and_cot_from_filename(filename: str):
     return None, None
 
 def extract_temperature_from_filename(filename: str):
-    """
-    从文件名中提取temperature信息
-    返回: temperature字符串，如果找到，否则返回 None
-    """
+    """Extract temperature information from file name
+    Returns: temperature string, if found, otherwise returns None"""
     # Regex: _temperature_(.+?)_cycles_
     temp_match = re.search(r'_temperature_(.+?)_cycles_', filename)
     if temp_match:
@@ -30,10 +26,8 @@ def extract_temperature_from_filename(filename: str):
     return None
 
 def extract_final_response_only(response_text: str, model_name: str):
-    """
-    从可能包含对话历史的回复中提取仅最后的回复
-    移除所有对话历史，只保留模型的最终回答
-    """
+    """Extract only last replies from replies that may contain conversation history
+    Remove all conversation history and keep only the final answer of the model"""
     if not response_text:
         return response_text
     
@@ -131,10 +125,8 @@ def extract_final_response_only(response_text: str, model_name: str):
         return cleaned.strip()
 
 def extract_last_reply_from_txt(file_path: str, task_name: str):
-    """
-    从txt文件中提取每个cycle的模型最后一次回复
-    返回: [(cycle, model_name, last_reply), ...]
-    """
+    """Extract the last response of the model for each cycle from the txt file
+    Returns: [(cycle, model_name, last_reply),...]"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -149,7 +141,7 @@ def extract_last_reply_from_txt(file_path: str, task_name: str):
         cycle_matches = list(re.finditer(cycle_pattern, content))
         
         if not cycle_matches:
-            print(f"警告: 在文件 {filename} 中未找到cycle信息")
+            print(f"Warning: On file{filename}No cycle information found in")
             return []
         
         results = []
@@ -209,11 +201,11 @@ def extract_last_reply_from_txt(file_path: str, task_name: str):
                     
                     if last_reply:
                         results.append((cycle_num, model_name, last_reply, majority_group))
-                        print(f"  - Cycle {cycle_num}: 提取到DeepSeek完整回复 (长度: {len(last_reply)})")
+                        print(f"  - Cycle {cycle_num}: Extracted to DeepSeek full reply (Length:{len(last_reply)})")
                     else:
-                        print(f"  - Cycle {cycle_num}: DeepSeek回复内容为空")
+                        print(f"  - Cycle {cycle_num}: DeepSeek reply content is empty")
                 else:
-                    print(f"  - Cycle {cycle_num}: DeepSeek模型未找到足够的--------------------分隔符 (找到{len(dash_matches)}个)")
+                    print(f"  - Cycle {cycle_num}: DeepSeek model did not find enough-------------------- delimiters (found{len(dash_matches)}Pcs")
             # Llama detection branch
             elif "llama" in model_name.lower():
                 # Llama: take everything after final assistant header
@@ -232,7 +224,7 @@ def extract_last_reply_from_txt(file_path: str, task_name: str):
                     # Strip special markers
                     last_reply = re.sub(r'\n+', '\n', last_reply).strip()
                     results.append((cycle_num, model_name, last_reply, majority_group))
-                    print(f"  - Cycle {cycle_num}: 提取到Llama完整回复 (长度: {len(last_reply)})")
+                    print(f"  - Cycle {cycle_num}: Extracted to Llama full reply (Length:{len(last_reply)})")
                 elif last_pos_backup != -1:
                     raw_reply = cycle_content[last_pos_backup + len(last_tag_backup):]
                     # Truncate at next rule line
@@ -244,7 +236,7 @@ def extract_last_reply_from_txt(file_path: str, task_name: str):
                     # Strip special markers
                     last_reply = re.sub(r'\n+', '\n', last_reply).strip()
                     results.append((cycle_num, model_name, last_reply, majority_group))
-                    print(f"  - Cycle {cycle_num}: 提取到Llama完整回复 (长度: {len(last_reply)})")
+                    print(f"  - Cycle {cycle_num}: Extracted to Llama full reply (Length:{len(last_reply)})")
                 else:
                     # Fallback generic [model] pattern
                     reply_pattern = r'\[([^\]]+)\]\n(.*?)(?=\n\[|\n--------------------|\n====================|\n\n|$)'
@@ -264,11 +256,11 @@ def extract_last_reply_from_txt(file_path: str, task_name: str):
                         
                         if last_reply is not None:  # No min-length guard
                             results.append((cycle_num, model_name, last_reply, majority_group))
-                            print(f"  - Cycle {cycle_num}: 提取到回复 (长度: {len(last_reply)})")
+                            print(f"  - Cycle {cycle_num}: Extract to reply (Length:{len(last_reply)})")
                         else:
-                            print(f"  - Cycle {cycle_num}: 回复内容为None")
+                            print(f"  - Cycle {cycle_num}: The reply content is None")
                     else:
-                        print(f"  - Cycle {cycle_num}: 未找到Llama模型回复，cycle_content结尾如下：{cycle_content[-100:]}")
+                        print(f"  - Cycle {cycle_num}: No Llama model response found, end of cycle_content as follows:{cycle_content[-100:]}")
             elif "gemma" in model_name.lower():
                 # Gemma final turn until separator
                 tag_model = '<start_of_turn>model'
@@ -301,9 +293,9 @@ def extract_last_reply_from_txt(file_path: str, task_name: str):
                     last_reply = re.sub(r'^\s*(model|assistant)\s*\n?', '', last_reply, flags=re.IGNORECASE)
                     last_reply = re.sub(r'\n+', '\n', last_reply).strip()
                     results.append((cycle_num, model_name, last_reply, majority_group))
-                    print(f"  - Cycle {cycle_num}: 提取到Gemma完整回复 (长度: {len(last_reply)})")
+                    print(f"  - Cycle {cycle_num}: Extract to Gemma Full Reply (Length:{len(last_reply)})")
                 else:
-                    print(f"  - Cycle {cycle_num}: 未找到Gemma模型回复起始标记，cycle_content结尾如下：{cycle_content[-100:]}")
+                    print(f"  - Cycle {cycle_num}: Gemma model reply start tag not found, end of cycle_content as follows:{cycle_content[-100:]}")
             else:
                 # Other models: [model_name] pattern
                 # Find every [model] reply
@@ -345,9 +337,9 @@ def extract_last_reply_from_txt(file_path: str, task_name: str):
                             
                             if full_reply_content is not None:  # No min-length guard
                                 results.append((cycle_num, model_name, full_reply_content, majority_group))
-                                print(f"  - Cycle {cycle_num}: 提取到Qwen完整回复 (长度: {len(full_reply_content)})")
+                                print(f"  - Cycle {cycle_num}: Extracted to Qwen full reply (Length:{len(full_reply_content)})")
                             else:
-                                print(f"  - Cycle {cycle_num}: Qwen回复内容为None")
+                                print(f"  - Cycle {cycle_num}: Qwen replied None")
                         else:
                             # Others: full final reply block
                             # Offset of last [model]
@@ -380,24 +372,22 @@ def extract_last_reply_from_txt(file_path: str, task_name: str):
                             
                             if last_reply is not None:  # No min-length guard
                                 results.append((cycle_num, model_name, last_reply, majority_group))
-                                print(f"  - Cycle {cycle_num}: 提取到回复 (长度: {len(last_reply)})")
+                                print(f"  - Cycle {cycle_num}: Extract to reply (Length:{len(last_reply)})")
                             else:
-                                print(f"  - Cycle {cycle_num}: 回复内容为None")
+                                print(f"  - Cycle {cycle_num}: The reply content is None")
                 else:
-                    print(f"  - Cycle {cycle_num}: 未找到模型回复")
+                    print(f"  - Cycle {cycle_num}: Model response not found")
         
         return results
         
     except Exception as e:
-        print(f"错误: 处理文件 {file_path} 时出错: {e}")
+        print(f"Error: Processing file{file_path}Error during:{e}")
         return []
 
 def extract_task3_replies(cycle_content: str, model_name_from_filename: str):
-    """
-    从task3的cycle内容中提取两个问题的回答
-    根据内容识别是升职问题还是股票问题
-    返回: ((model_name_promotion, reply_promotion), (model_name_stock, reply_stock))
-    """
+    """Extract answers to two questions from the cycle content of task3
+    Identify whether it's a promotion issue or a stock issue based on the content
+    Returns: ((model_name_promotion, reply_promotion), (model_name_stock, reply_stock))"""
     promotion_reply = None
     stock_reply = None
     # Both answers share filename model id
@@ -449,16 +439,14 @@ def extract_task3_replies(cycle_content: str, model_name_from_filename: str):
     return (promotion_model_name, promotion_reply), (stock_model_name, stock_reply)
 
 def _extract_reply_from_segment_backup_style(segment_content: str, model_name_from_filename: str, is_first_task: bool = False):
-    """
-    从segment中提取模型回复
-    先尝试按问题定位，再提取到--------------------之间的内容
+    """Extract model responses from segment
+    Try to locate by question before extracting content-------------------- between
     
     Args:
-        segment_content: 内容片段
-        model_name_from_filename: 模型名
-        is_first_task: 是否为第一个问题。第一个问题提取到segment末尾（因为segment已经截取到倒数第三个--------------------），
-                      第二个问题也提取到segment末尾（因为segment已经截取到倒数第一个--------------------）
-    """
+        segment_content: Content snippet
+        model_name_from_filename: Model name
+        is_first_task: Is this the first question?The first question is extracted to the end of the segment (because the segment has been intercepted to the penultimate--------------------),
+                      The second question is also extracted to the end of the segment (because the segment has been intercepted to the first to last--------------------)"""
     extracted_model_name = model_name_from_filename  # Default to filename model id
     extracted_reply = None
     
@@ -630,10 +618,8 @@ def _extract_reply_from_segment_backup_style(segment_content: str, model_name_fr
     return extracted_model_name, extracted_reply
 
 def _extract_reply_from_segment(segment_content: str, model_name_from_filename: str):
-    """
-    从给定的内容片段中提取模型名和回复
-    参考备份文件的逻辑，完全按照备份文件的提取方式
-    """
+    """Extract model names and responses from given content segments
+    Refer to the logic of the backup file, exactly according to the extraction method of the backup file"""
     extracted_model_name = model_name_from_filename  # Default to filename model id
     extracted_reply = None
 
@@ -703,9 +689,7 @@ def _extract_reply_from_segment(segment_content: str, model_name_from_filename: 
     return extracted_model_name, extracted_reply
 
 def scan_and_extract_results():
-    """
-    扫描results目录下的task1-3、task1_steered、task2_steered、task3_steered文件夹，提取所有txt文件的最后一次回复
-    """
+    """Scan the task1-3, task1_steered, task2_steered, task3_steered folders in the results directory to extract the last response of all txt files"""
     results_dir = "./results"
     all_results = []
     
@@ -713,23 +697,23 @@ def scan_and_extract_results():
     for task_dir in ["task1", "task2", "task3", "task1_steered", "task2_steered", "task3_steered"]:
         task_path = os.path.join(results_dir, task_dir)
         if not os.path.exists(task_path):
-            print(f"目录 {task_path} 不存在，跳过")
+            print(f"Directory {task_path} does not exist, skipping")
             continue
             
-        print(f"\n正在处理 {task_dir}...")
-        print(f"扫描目录: {task_path}")
+        print(f"\nProcessing {task_dir}...")
+        print(f"Scanning directory: {task_path}")
         
         # Collect txt files
         txt_files = [f for f in os.listdir(task_path) if f.endswith('.txt')]
-        print(f"找到 {len(txt_files)} 个txt文件")
+        print(f"Found {len(txt_files)} txt files")
         
         for i, filename in enumerate(txt_files):
             file_path = os.path.join(task_path, filename)
-            print(f"\n处理文件 {i+1}/{len(txt_files)}: {filename}")
+            print(f"\nProcessing file {i+1}/{len(txt_files)}: {filename}")
             
             # Skip empty files
             if os.path.getsize(file_path) == 0:
-                print(f"  跳过空文件: {filename}")
+                print(f"Skip empty files:{filename}")
                 continue
             
             # Mode from filename
@@ -755,7 +739,7 @@ def scan_and_extract_results():
                 cycle_pattern = r'Cycle (\d+)/\d+:'
                 cycle_matches = list(re.finditer(cycle_pattern, file_content))
                 if len(cycle_matches) < MIN_CYCLE_COUNT:
-                    print(f"  跳过cycle数不足{MIN_CYCLE_COUNT}的文件: {filename} (cycle数: {len(cycle_matches)})")
+                    print(f"Insufficient number of skipped cycles{MIN_CYCLE_COUNT}from here{filename}(Number of cycles:{len(cycle_matches)})")
                     continue
                 
                 # Re-parse task3 for both answers
@@ -807,7 +791,7 @@ def scan_and_extract_results():
                             'Filename': filename,
                             'Cycle': cycle_num,
                             'Model': promotion_model,
-                            'ChatGPT最后回复': promotion_reply,
+                            "ChatGPT Last Reply": promotion_reply,
                             'majority_group': None,  # Task3 omits majority_group
                             'Mode': mode,
                             'Role': role,
@@ -821,7 +805,7 @@ def scan_and_extract_results():
                             'Filename': filename,
                             'Cycle': cycle_num,
                             'Model': stock_model,
-                            'ChatGPT最后回复': stock_reply,
+                            "ChatGPT Last Reply": stock_reply,
                             'majority_group': None,  # Task3 omits majority_group
                             'Mode': mode,
                             'Role': role,
@@ -837,7 +821,7 @@ def scan_and_extract_results():
                 
                 # Require ≥100 cycles
                 if len(file_results) < MIN_CYCLE_COUNT:
-                    print(f"  跳过cycle数不足{MIN_CYCLE_COUNT}的文件: {filename} (cycle数: {len(file_results)})")
+                    print(f"Insufficient number of skipped cycles{MIN_CYCLE_COUNT}from here{filename}(Number of cycles:{len(file_results)})")
                     continue
                 
                 # Append row to results
@@ -849,7 +833,7 @@ def scan_and_extract_results():
                         'Filename': filename,
                         'Cycle': cycle,
                         'Model': model_name,
-                        'ChatGPT最后回复': last_reply,
+                        "ChatGPT Last Reply": last_reply,
                         'majority_group': majority_group,
                         'Mode': mode,
                         'Role': role,
@@ -861,7 +845,7 @@ def scan_and_extract_results():
 
 def main():
     print("=" * 60)
-    print("开始从txt文件提取模型最后一次回复")
+    print("Start extracting model last reply from txt file")
     print("=" * 60)
     
     # Create output directory
@@ -872,7 +856,7 @@ def main():
     all_results = scan_and_extract_results()
     
     if not all_results:
-        print("\n未找到任何有效结果！")
+        print("No valid results found!")
         return
     
     # Save workbook
@@ -892,21 +876,21 @@ def main():
     df.to_excel(output_file, index=False, engine="openpyxl")
     
     print("\n" + "=" * 60)
-    print("提取完成！")
-    print(f"总共提取了 {len(all_results)} 个回复")
-    print(f"结果已保存到: {output_file}")
+    print("Extraction complete!")
+    print(f"Extracted {len(all_results)} replies in total")
+    print(f"Results saved to: {output_file}")
     print("=" * 60)
     
     # Print stats
-    print("\n统计信息:")
+    print("Statistics")
     task_counts = df['Task'].value_counts()
     for task, count in task_counts.items():
-        print(f"  {task}: {count} 个回复")
+        print(f"  {task}: {count} replies")
     
     model_counts = df['Model'].value_counts()
-    print(f"\n模型分布:")
+    print(f"\nModel distribution:")
     for model, count in model_counts.head(10).items():  # Show top 10 models
-        print(f"  {model}: {count} 个回复")
+        print(f"  {model}: {count} replies")
 
 if __name__ == "__main__":
     main()

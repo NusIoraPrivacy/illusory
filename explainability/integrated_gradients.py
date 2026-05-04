@@ -11,21 +11,19 @@ from matplotlib.colors import LinearSegmentedColormap
 RANDOM_STATE = 42
 
 def integrated_gradients(model, tokenizer_or_processor, input_data, out_prefix, baseline=None, target_label=1, n_steps=20, mode="text", device="cpu", per_token_ig=False, model_type=None, messages=None, model_path=None, batch_size=1, **kwargs):
-    """
-    通用集成梯度入口。mode支持'text'或'image'。
-    - model: 已加载的transformers模型
-    - tokenizer: transformers分词器
-    - input_data: 文本(str)或图片tensor
-    - out_prefix: 输出文件前缀（不带后缀），如results/explainability/task1/xxx
-    - baseline: baseline输入（文本为全pad，图片为全零）
-    - target_label: 目标类别（文本分类时用）
-    - n_steps: IG步数
-    - mode: 'text'或'image'
-    - device: 运行设备
-    - per_token_ig: 是否对每个user输入token逐个归因，极低显存消耗
-    - model_type: 可选，指定模型类型（qwen/llama），否则自动判断
-    - batch_size: 当per_token_ig=True时，每次处理的token数量，默认为1
-    """
+    """Generic integrated gradient entry. Mode supports' text 'or' image '.
+    - model: loaded transformers model
+    - tokenizer: transformers
+    - input_data: text (str) or picture tensor
+    - out_prefix: output file prefix (without suffix), e.g. results/explainability/task1/xxx
+    - baseline: baseline input (text is full pad, image is full zero)
+    - target_label: target category (for text categorization)
+    - n_steps: IG steps
+    - mode: 'text' or 'image'
+    - device: Run the device
+    - per_token_ig: whether token is individually attributed to each user input, very low memory consumption
+    - model_type: optional, specify the model type (qwen/llama), otherwise it will be automatically judged
+- batch_size: when per_token_ig = True, the number of tokens processed each time, the default is 1"""
     # # Force GPU: pick GPU with most free memory
     # if device == "cuda" and torch.cuda.is_available():
     #     # Check CUDA_VISIBLE_DEVICES
@@ -215,7 +213,7 @@ def integrated_gradients(model, tokenizer_or_processor, input_data, out_prefix, 
     ######## Image attribution ########
     elif mode == "image":
         n_steps = 50
-        print("[IG] 为Qwen2.5-VL模型使用视觉分支集成梯度归因方法")
+        print("[IG] Integrated gradient attribution method using visual branches for Qwen2.5-VL model")
         try:
             if isinstance(input_data, (Image.Image, np.ndarray, torch.Tensor)):
                 # img = ensure_rgb_pil(input_data)
@@ -230,7 +228,7 @@ def integrated_gradients(model, tokenizer_or_processor, input_data, out_prefix, 
                 pixel_values = processed.pixel_values.to(model_device)         # [num_patches, patch_dim] e.g. [1024,1176]
                 image_grid_thw = processed.image_grid_thw.to(model_device)     # [1, 3]
 
-                print(f"[IG] 处理后的图像张量 shape: {pixel_values.shape}")
+                print(f"[IG] Processed image tensor shape:{pixel_values.shape}")
                 print(f"[IG] image_grid_thw shape: {image_grid_thw.shape}")
 
                 baseline = torch.zeros_like(pixel_values).to(model_device)
@@ -256,7 +254,7 @@ def integrated_gradients(model, tokenizer_or_processor, input_data, out_prefix, 
                             elif hasattr(model, 'visual'):
                                 vision_tower = model.visual
                             else:
-                                raise AttributeError(f"模型 {type(model).__name__} 没有找到视觉组件")
+                                raise AttributeError(f"Models{type(model).__name__}No visual components found")
                             vision_output = vision_tower(img_input_batch[i], image_grid_thw)
                             
                             if hasattr(vision_output, 'last_hidden_state'):
@@ -269,7 +267,7 @@ def integrated_gradients(model, tokenizer_or_processor, input_data, out_prefix, 
                         
                         result = torch.stack(outputs).mean()
                         return result.unsqueeze(0).to(model_device)  #
-                print("[IG] 计算视觉分支集成梯度归因...")
+                print("[IG] Compute Visual Branch Integration Gradient Attribution...")
                 ig = IntegratedGradients(forward_vision_model)
                 attributions, delta = ig.attribute(
                     inputs=pixel_values,
@@ -277,7 +275,7 @@ def integrated_gradients(model, tokenizer_or_processor, input_data, out_prefix, 
                     return_convergence_delta=True,
                     n_steps=5
                 )
-                print(f"[IG] 收敛delta: {delta.mean().item() if isinstance(delta, torch.Tensor) and delta.numel() > 1 else delta.item() if isinstance(delta, torch.Tensor) else delta}")
+                print(f"[IG] Convergence delta:{delta.mean().item() if isinstance(delta, torch.Tensor) and delta.numel() > 1 else delta.item() if isinstance(delta, torch.Tensor) else delta}")
                 
                 with torch.no_grad():
                     # attributions shape [num_patches, patch_dim]
@@ -317,7 +315,7 @@ def integrated_gradients(model, tokenizer_or_processor, input_data, out_prefix, 
                         ).squeeze().numpy()
                     else:
                         # Non-square patch count → simple fallback
-                        print(f"[IG] 警告：patch数量 {attr_map.shape[0]} 不是完全平方数，使用简单reshape")
+                        print(f"[IG] Warning: Number of patches{attr_map.shape[0]}Not exactly square, use simple reshape")
                         pixel_attr_map = attr_map.reshape(-1, 1)  # Temporary reshape for matplotlib
                         attr_map_interpolated = pixel_attr_map
                     
@@ -396,11 +394,11 @@ def integrated_gradients(model, tokenizer_or_processor, input_data, out_prefix, 
                     
                 return pixel_attr_map, img, attributions
             else:
-                raise ValueError(f"input_data类型不支持: {type(input_data)}")
+                raise ValueError(f"the input_data type does not support:{type(input_data)}")
         except Exception as e:
-            print(f"[IG] 计算视觉分支集成梯度时出错: {str(e)}")
-            print(f"[IG] 错误类型: {type(e).__name__}")
-            print("[IG] 错误追踪:")
+            print(f"[IG] Error calculating visual branch integration gradient:{str(e)}")
+            print(f"[IG] Error type:{type(e).__name__}")
+            print("[IG] Bug Tracking:")
             import traceback
             traceback.print_exc()
             raise e

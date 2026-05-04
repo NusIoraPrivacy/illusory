@@ -11,10 +11,8 @@ from matplotlib.colors import LinearSegmentedColormap
 RANDOM_STATE = 42
 
 def _upsample_reflect(x, size, interpolate_mode="bilinear"):
-    """
-    上采样4D张量，使用反射填充
-    参考TorchRay实现
-    """
+    """Upsampling 4D tensor with reflection fill
+    Refer to TorchRay implementation"""
     assert len(x.shape) == 4
     orig_size = x.shape[2:]
     
@@ -45,14 +43,12 @@ def _upsample_reflect(x, size, interpolate_mode="bilinear"):
     return x_new
 
 def generate_rise_masks(n_masks, input_size, num_cells=7, p=0.5, device="cpu"):
-    """
-    生成RISE随机掩码
-    - n_masks: 掩码数量
-    - input_size: 输入尺寸 (H, W)
-    - num_cells: 低分辨率网格的单元格数量
-    - p: 每个单元格被设置为0的概率
-    - device: 设备
-    """
+    """Generate rise Random Mask
+    - n_masks: number of masks
+    - input_size: input size (H, W)
+    - num_cells: number of cells in low resolution grid
+    -p: probability that each cell is set to 0
+    - device: Device"""
     masks = torch.zeros(n_masks, 1, input_size[0], input_size[1], device=device)
     
     # Low-res grid cell size
@@ -78,29 +74,27 @@ def generate_rise_masks(n_masks, input_size, num_cells=7, p=0.5, device="cpu"):
     return masks
 
 def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_label=1, n_masks=1024, num_cells=7, p=0.5, mode="image", device="cpu", model_type=None, messages=None, model_path=None, **kwargs):
-    """
-    RISE归因方法，仅支持图像归因。
-    基于原始论文实现：https://arxiv.org/abs/1806.07421
+    """Rise attribution method, only image attribution is supported.
+    Implementation based on original paper: https://arxiv.org/abs/1806.07421
     
-    - model: 已加载的transformers模型
-    - tokenizer_or_processor: 图像处理器
-    - input_data: 图片tensor或PIL图像
-    - out_prefix: 输出文件前缀（不带后缀）
-    - target_label: 目标类别（图像分类时用）
-    - n_masks: RISE掩码数量
-    - num_cells: 低分辨率网格的单元格数量
-    - p: 每个单元格被设置为0的概率
-    - mode: 仅支持'image'
-    - device: 运行设备
-    """
+    - model: loaded transformers model
+    - tokenizer_or_processor: image processor
+    - input_data: image tensor or PIL image
+    - out_prefix: output file prefix (without suffix)
+    - target_label: target category (for image classification)
+    - n_masks: number of rise masks
+    - num_cells: number of cells in low resolution grid
+    -p: probability that each cell is set to 0
+    - mode: only 'image' supported
+    - device: Run the device"""
     if RANDOM_STATE:
         random.seed(RANDOM_STATE)
         torch.manual_seed(RANDOM_STATE)
     
     if mode != "image":
-        raise ValueError("RISE方法仅支持图像归因，请使用mode='image'")
+        raise ValueError("Rise method only supports image attribution, please use mode = 'image'")
     
-    print("[RISE] 开始图像归因...")
+    print("[rise] Start Image Attribution...")
     try:
         if isinstance(input_data, (Image.Image, np.ndarray, torch.Tensor)):
             # Process input image
@@ -123,13 +117,11 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
             model_device = next(model.parameters()).device
             x = transform(img).unsqueeze(0).to(model_device)  # [1, 3, H, W]
             
-            print(f"[RISE] 输入图像张量 shape: {x.shape}")
+            print(f"[rise] Input image tensor shape:{x.shape}")
             
             # Forward closure
             def forward_fn(masked_img):
-                """
-                前向函数，计算目标类别的预测概率
-                """
+                """Forward function to calculate the predicted probability of the target category"""
                 masked_img = masked_img.to(model_device)
                 
                 # image_processor path
@@ -169,7 +161,7 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
                         elif hasattr(model, 'visual'):
                             vision_tower = model.visual
                         else:
-                            raise AttributeError(f"模型 {type(model).__name__} 没有找到视觉组件")
+                            raise AttributeError(f"Models{type(model).__name__}No visual components found")
                         vision_output = vision_tower(pixel_values, image_grid_thw)
                 else:
                     # Forward — Llama-4-Scout
@@ -181,7 +173,7 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
                         elif hasattr(model, 'visual'):
                             vision_tower = model.visual
                         else:
-                            raise AttributeError(f"模型 {type(model).__name__} 没有找到视觉组件")
+                            raise AttributeError(f"Models{type(model).__name__}No visual components found")
                         vision_output = vision_tower(pixel_values)
                 
                 # Unified vision feature fetch
@@ -204,7 +196,7 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
             # Sample RISE masks
             masks = generate_rise_masks(n_masks, input_size, num_cells, p, model_device)
             
-            print(f"[RISE] 使用 {n_masks} 个掩码计算归因...")
+            print(f"Use [rise]{n_masks}Masks to calculate attribution...")
             
             # Baseline prediction
             with torch.no_grad():
@@ -308,11 +300,11 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
             
             return saliency, img, masks
         else:
-            raise ValueError(f"input_data类型不支持: {type(input_data)}")
+            raise ValueError(f"the input_data type does not support:{type(input_data)}")
     except Exception as e:
-        print(f"[RISE] 计算RISE归因时出错: {str(e)}")
-        print(f"[RISE] 错误类型: {type(e).__name__}")
-        print("[RISE] 错误追踪:")
+        print(f"[rise] Error calculating rise attribution:{str(e)}")
+        print(f"[rise] Error Type:{type(e).__name__}")
+        print("[rise] Bug Tracking:")
         import traceback
         traceback.print_exc()
         raise e 

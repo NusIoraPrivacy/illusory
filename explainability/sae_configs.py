@@ -1,16 +1,12 @@
 
-"""
-SAE配置管理模块
-包含所有支持的模型和对应的SAE配置
-"""
+"""SAE Configuration Management Module
+Contains all supported models and corresponding SAE configurations"""
 
 import os
 
 
 def get_sae_config_for_model(model_name, model_path=None):
-    """
-    根据模型名称自动选择对应的SAE配置
-    """
+    """Automatically select the corresponding SAE configuration according to the model name"""
     model_name_lower = model_name.lower()
     
     # SAE config registry
@@ -282,25 +278,23 @@ def get_sae_config_for_model(model_name, model_path=None):
     # Exact match
     if model_name_lower in sae_configs:
         config = sae_configs[model_name_lower].copy()
-        print(f"[SAE] 找到精确匹配的SAE配置: {model_name} -> {config['release']}")
+        print(f"[SAE] Found exact matching SAE configuration:{model_name} -> {config['release']}")
         return config
     
     # Fuzzy match
     for key, config in sae_configs.items():
         if key in model_name_lower or model_name_lower in key:
             config = config.copy()
-            print(f"[SAE] 找到模糊匹配的SAE配置: {model_name} -> {config['release']}")
+            print(f"[SAE] Fuzzy matching SAE configuration found:{model_name} -> {config['release']}")
             return config
     
     # Default Llama-3-8B config
     default_config = sae_configs['llama-3.1-8b-instruct'].copy()
-    print(f"[SAE] 未找到匹配的SAE配置，使用默认配置: {model_name} -> {default_config['release']}")
+    print(f"[SAE] No matching SAE configuration found, use default configuration:{model_name} -> {default_config['release']}")
     return default_config
 
 def get_available_gemma_configs():
-    """
-    获取所有可用的Gemma SAE配置
-    """
+    """Get all available Gemma SAE configurations"""
     gemma_configs = []
     for key in get_sae_config_for_model.__code__.co_names:
         if 'gemma-2-9b-it' in key:
@@ -308,16 +302,14 @@ def get_available_gemma_configs():
     return gemma_configs
 
 def load_gemma_sae_from_local(npz_file_path, device="cpu"):
-    """
-    从本地npz文件加载Gemma SAE
+    """Load Gemma SAE from local npz file
     
     Args:
-        npz_file_path: params.npz文件路径
-        device: 设备（cpu或cuda）
+        npz_file_path: params.npz file path
+        device: Device (cpu or cuda)
     
     Returns:
-        tuple: (sae, cfg_dict, feature_sparsity) 或 None
-    """
+        tuple: (sae, cfg_dict, feature_sparsity) or None"""
     try:
         import numpy as np
         import torch
@@ -338,11 +330,11 @@ def load_gemma_sae_from_local(npz_file_path, device="cpu"):
                     StandardSAE = SAE
                     StandardSAEConfig = SAEConfig
         
-        print(f"[SAE] 从本地加载Gemma SAE: {npz_file_path}")
+        print(f"[SAE] Load Gemma SAE from local:{npz_file_path}")
         
         # Load npz weights
         data = np.load(npz_file_path, allow_pickle=True)
-        print(f"[SAE] 成功加载npz文件，包含: {list(data.keys())}")
+        print(f"[SAE] Successfully loaded npz file containing:{list(data.keys())}")
         
         # Extract SAE tensors
         W_enc = torch.tensor(data['W_enc'], dtype=torch.float32, device=device)
@@ -351,7 +343,7 @@ def load_gemma_sae_from_local(npz_file_path, device="cpu"):
         b_dec = torch.tensor(data['b_dec'], dtype=torch.float32, device=device)
         # threshold = torch.tensor(...)  # StandardSAE has no threshold field
         
-        print(f"[SAE] SAE参数维度: d_in={W_enc.shape[0]}, d_sae={W_enc.shape[1]}, d_out={W_dec.shape[0]}")
+        print(f"[SAE] SAE Parameter Dimension: d_in ={W_enc.shape[0]}, d_sae={W_enc.shape[1]}, d_out={W_dec.shape[0]}")
         
         # Build SAEConfig env-specific
         try:
@@ -417,23 +409,21 @@ def load_gemma_sae_from_local(npz_file_path, device="cpu"):
         # Match SAE.from_pretrained() return shape
         sae_result = (sae, cfg_dict, None)  # (sae, cfg_dict, feature_sparsity)
         
-        print(f"[SAE] ✅ 成功从本地npz文件创建SAE对象")
+        print(f"[SAE] ✅ Successfully created SAE object from local npz file")
         data.close()
         
         return sae_result
         
     except Exception as e:
-        print(f"[SAE] 本地npz文件加载失败: {e}")
+        print(f"[SAE] Failed to load local npz file:{e}")
         import traceback
         traceback.print_exc()
         return None
 
 def generate_simple_html_visualization(token_texts, selected_feature_acts, top_features, base_name, cycle_suffix, fig_dir, top_k):
-    """
-    生成超简化HTML可视化
-    """
+    """Generate ultra-simplified HTML visualizations"""
     try:
-        print(f"[SAE] 开始生成超简化HTML，特征数量: {len(top_features)}")
+        print(f"[SAE] Start generating ultra-simplified HTML, number of features:{len(top_features)}")
         
         # Minimal HTML export
         simple_html = f"""
@@ -565,11 +555,11 @@ def generate_simple_html_visualization(token_texts, selected_feature_acts, top_f
     </div>
 """
         
-        print(f"[SAE] HTML头部生成完成，开始生成特征页面...")
+        print(f"[SAE] HTML header generation complete, start generating feature page...")
         
         # Viz each feature
         for feat_idx, feature_id in enumerate(top_features):
-            print(f"[SAE] 正在生成特征 {feature_id} (进度: {feat_idx+1}/{len(top_features)})")
+            print(f"[SAE] Generating features{feature_id}Progress:{feat_idx+1}/{len(top_features)})")
             feature_acts = selected_feature_acts[:, feat_idx]
             
             simple_html += f"""
@@ -652,7 +642,7 @@ def generate_simple_html_visualization(token_texts, selected_feature_acts, top_f
         </div>
     </div>
 """
-            print(f"[SAE] 特征 {feature_id} 生成完成")
+            print(f"[SAE] Characteristics{feature_id}Build Complete")
         
         # Close HTML tags
         simple_html += """
@@ -660,39 +650,37 @@ def generate_simple_html_visualization(token_texts, selected_feature_acts, top_f
 </html>
 """
         
-        print(f"[SAE] HTML生成完成，开始保存文件...")
+        print(f"[SAE] HTML generation complete, start saving file...")
         
         # Persist minimal HTML
         simple_html_file = os.path.join(fig_dir, f"{base_name}{cycle_suffix}_top{top_k}_features_simple.html")
         with open(simple_html_file, 'w', encoding='utf-8') as f:
             f.write(simple_html)
-        print(f"[SAE] 已生成超简化HTML: {simple_html_file}")
+        print(f"[SAE] Generated super-simplified HTML:{simple_html_file}")
         
         return simple_html_file
         
     except Exception as e:
-        print(f"[SAE] 超简化HTML生成失败: {e}")
+        print(f"[SAE] Hyper-Simplified HTML Generation Failed:{e}")
         import traceback
         traceback.print_exc()
         return None
 
 def load_sae_model(sae_release, sae_id, sae_device="cuda:0"):
-    """
-    加载SAE模型，支持多种加载方式
+    """Load SAE models with multiple loading methods
     
     Args:
-        sae_release: SAE发布版本
+        sae_release: SAE Release Version
         sae_id: SAE ID
-        sae_device: SAE设备
+        sae_device: SAE device
     
     Returns:
-        tuple: (sae, cfg_dict, feature_sparsity) 或 None
-    """
+        tuple: (sae, cfg_dict, feature_sparsity) or None"""
     try:
         from sae_lens import SAE
         
-        print(f"[SAE] 开始加载SAE模型: {sae_release}/{sae_id}")
-        print(f"[SAE] 目标设备: {sae_device}")
+        print(f"[SAE] Start loading SAE model:{sae_release}/{sae_id}")
+        print(f"[SAE] Target Device:{sae_device}")
         
         sae = None
         cfg_dict = {'d_in': 768}
@@ -724,31 +712,31 @@ def load_sae_model(sae_release, sae_id, sae_device="cuda:0"):
             safetensors_file = os.path.join(sae_config_path, "sae_weights.safetensors")
             if os.path.exists(cfg_file) and os.path.exists(safetensors_file):
                 sae_files_exist = True
-                print(f"[SAE] 找到Llama格式SAE文件: cfg.json + sae_weights.safetensors")
+                print(f"[SAE] Found SAE file in Llama format: cfg.json + sae_weights.safetensors")
             else:
                 # Gemma layout: params.npz
                 npz_file = os.path.join(sae_config_path, "params.npz")
                 if os.path.exists(npz_file):
                     sae_files_exist = True
-                    print(f"[SAE] 找到Gemma格式SAE文件: params.npz")
+                    print(f"[SAE] Found SAE file in Gemma format: params.npz")
         
         if sae_files_exist:
             try:
-                print(f"[SAE] 尝试从本地路径加载SAE模型: {sae_config_path}")
+                print(f"[SAE] Attempt to load SAE model from local path:{sae_config_path}")
                 
                 # Loader per format
                 if os.path.exists(os.path.join(sae_config_path, "cfg.json")):
                     # Llama: load_from_disk
-                    print(f"[SAE] 使用Llama格式加载方法")
+                    print(f"[SAE] Load method using Llama format")
                     sae_result = SAE.load_from_disk(sae_config_path, device=sae_device)
                 else:
                     # Gemma: custom npz loader
-                    print(f"[SAE] 使用Gemma格式加载方法")
+                    print(f"[SAE] Load method using Gemma format")
                     npz_file = os.path.join(sae_config_path, "params.npz")
                     if os.path.exists(npz_file):
                         sae_result = load_gemma_sae_from_local(npz_file, sae_device)
                     else:
-                        print(f"[SAE] 本地npz文件不存在: {npz_file}")
+                        print(f"[SAE] Local npz file does not exist:{npz_file}")
                         sae_result = None
                 
                 if isinstance(sae_result, tuple):
@@ -766,10 +754,10 @@ def load_sae_model(sae_release, sae_id, sae_device="cuda:0"):
                     cfg_dict = {'d_in': 768}
                     feature_sparsity = None
                     
-                print(f"[SAE] 成功从本地路径加载SAE模型: {sae}")
+                print(f"[SAE] Successfully loaded SAE model from local path:{sae}")
                 
             except Exception as e:
-                print(f"[SAE] 本地路径加载失败: {str(e)}")
+                print(f"[SAE] Failed to load local path:{str(e)}")
                 sae = None
         
         # Method 2: HF cache
@@ -777,7 +765,7 @@ def load_sae_model(sae_release, sae_id, sae_device="cuda:0"):
             standard_cache_path = f"/root/.cache/huggingface/hub/models--{sae_release.replace('/', '--')}"
             if os.path.exists(standard_cache_path):
                 try:
-                    print(f"[SAE] 尝试从标准缓存加载SAE模型: {standard_cache_path}")
+                    print(f"[SAE] Attempt to load SAE model from standard cache:{standard_cache_path}")
                     
                     sae_result = SAE.from_pretrained(
                         release=sae_release,
@@ -800,16 +788,16 @@ def load_sae_model(sae_release, sae_id, sae_device="cuda:0"):
                         cfg_dict = {'d_in': 768}
                         feature_sparsity = None
                         
-                    print(f"[SAE] 成功从标准缓存加载SAE模型: {sae}")
+                    print(f"[SAE] Successfully loaded SAE model from standard cache:{sae}")
                     
                 except Exception as e:
-                    print(f"[SAE] 标准缓存加载失败: {str(e)}")
+                    print(f"[SAE] Standard Cache Load Failed:{str(e)}")
                     sae = None
         
         # Method 3: HF download
         if sae is None:
             try:
-                print(f"[SAE] 尝试从HuggingFace下载SAE模型: {sae_release}/{sae_id}")
+                print(f"[SAE] Try downloading the SAE model from HuggingFace:{sae_release}/{sae_id}")
                 
                 sae_result = SAE.from_pretrained(
                     release=sae_release,
@@ -832,52 +820,50 @@ def load_sae_model(sae_release, sae_id, sae_device="cuda:0"):
                     cfg_dict = {'d_in': 768}
                     feature_sparsity = None
                 
-                print(f"[SAE] 成功从HuggingFace加载SAE模型: {sae}")
+                print(f"[SAE] Successfully loaded SAE model from HuggingFace:{sae}")
                 
             except Exception as e:
-                print(f"[SAE] HuggingFace下载失败: {str(e)}")
-                print(f"[SAE] 网络问题导致无法下载SAE模型，跳过SAE分析")
-                print(f"[SAE] 返回空结果，程序继续运行")
+                print(f"[SAE] HuggingFace Download Failed:{str(e)}")
+                print(f"[SAE] Unable to download SAE model due to network issues, skipping SAE analysis")
+                print(f"[SAE] returned empty result, program continues to run")
                 return None
         
         if sae is None:
-            print(f"[SAE] 无法加载任何SAE模型，跳过SAE分析")
+            print(f"[SAE] Unable to load any SAE models, skipping SAE analysis")
             return None
         
         return (sae, cfg_dict, feature_sparsity)
         
     except ImportError:
-        print(f"[SAE] sae_lens未安装，无法加载SAE模型")
+        print(f"[SAE] sae_lens not installed, unable to load SAE model")
         return None
     except Exception as e:
-        print(f"[SAE] SAE加载过程中发生错误: {e}")
+        print(f"[SAE] An error occurred during SAE loading:{e}")
         import traceback
         traceback.print_exc()
         return None
 
 def load_hooked_transformer_for_sae(model_name, hooked_device="cuda:0"):
-    """
-    为SAE分析加载HookedTransformer模型
+    """Load HookedTransformer model for SAE analysis
     
     Args:
-        model_name: 模型名称
-        hooked_device: HookedTransformer设备
+        model_name: Model name
+        hooked_device: HookedTransformer device
     
     Returns:
-        HookedTransformer对象或None
-    """
+        HookedTransformer object or None"""
     try:
         from transformer_lens import HookedTransformer
         
-        print(f"[SAE] 开始加载HookedTransformer用于SAE分析...")
-        print(f"[SAE] 模型名称: {model_name}")
-        print(f"[SAE] 目标设备: {hooked_device}")
+        print(f"[SAE] Start loading HookedTransformer for SAE analysis...")
+        print(f"[SAE] Model Name:{model_name}")
+        print(f"[SAE] Target Device:{hooked_device}")
         
         hooked_model = None
         
         # HookedTransformer: local snapshot
         try:
-            print(f"[SAE] 尝试使用本地下载的HookedTransformer模型...")
+            print(f"[SAE] Try using a locally downloaded HookedTransformer model...")
             
             # Local path per model family
             sae_base_dir = "/workspace/illusory/huggingface/SAEs"
@@ -885,27 +871,27 @@ def load_hooked_transformer_for_sae(model_name, hooked_device="cuda:0"):
                 # IT HookedTransformer ↔ IT SAE
                 hooked_model_path = os.path.join(sae_base_dir, "gemma-scope-9b-it-res", "hooked-transformer-it")
                 model_name_for_hf = "google/gemma-2-9b-it"  # Instruct checkpoint
-                print(f"[SAE] 检测到Gemma模型，使用IT版本的HookedTransformer: {hooked_model_path}")
-                print(f"[SAE] 使用IT版本HookedTransformer，与IT版本SAE保持一致")
+                print(f"[SAE] Gemma model detected, using IT version of HookedTransformer:{hooked_model_path}")
+                print(f"[SAE] Align with IT version SAE using IT version HookedTransformer")
             else:
                 hooked_model_path = os.path.join(sae_base_dir, "llama-3-8b-it-res", "hooked-transformer")
                 model_name_for_hf = "meta-llama/Meta-Llama-3-8B-Instruct"  # Matching HF model id
-                print(f"[SAE] 使用本地Llama HookedTransformer: {hooked_model_path}")
+                print(f"[SAE] Using local Llama HookedTransformer:{hooked_model_path}")
             
             # Verify local path
-            print(f"[SAE] 检查本地路径: {hooked_model_path}")
-            print(f"[SAE] 路径存在: {os.path.exists(hooked_model_path)}")
+            print(f"[SAE] Check local path:{hooked_model_path}")
+            print(f"[SAE] Path Exists:{os.path.exists(hooked_model_path)}")
             
             if os.path.exists(hooked_model_path):
-                print(f"[SAE] 本地HookedTransformer路径存在，尝试加载...")
+                print(f"[SAE] Local HookedTransformer path exists, attempting to load...")
                 
                 # HF causal LM → HookedTransformer
                 from transformers import AutoModelForCausalLM, AutoTokenizer
                 
-                print(f"[SAE] 从本地路径加载HuggingFace模型: {hooked_model_path}")
+                print(f"[SAE] Load HuggingFace model from local path:{hooked_model_path}")
                 try:
                     # Load HF weights on CPU first
-                    print(f"[SAE] 使用CPU加载HuggingFace模型以避免内存冲突")
+                    print(f"[SAE] Load HuggingFace model with CPU to avoid memory conflicts")
                     
                     hf_model = AutoModelForCausalLM.from_pretrained(
                         hooked_model_path,
@@ -913,80 +899,78 @@ def load_hooked_transformer_for_sae(model_name, hooked_device="cuda:0"):
                         torch_dtype="auto",
                         low_cpu_mem_usage=True
                     )
-                    print(f"[SAE] HuggingFace模型加载成功")
+                    print(f"[SAE] HuggingFace model loaded successfully")
                     
                     # HookedTransformer.from_pretrained(..., hf_model=)
-                    print(f"[SAE] 开始创建HookedTransformer...")
+                    print(f"[SAE] Start creating HookedTransformer...")
                     hooked_model = HookedTransformer.from_pretrained(
                         model_name_for_hf,
                         hf_model=hf_model,
                         device=hooked_device
                     )
-                    print(f"[SAE] ✅ 成功从本地路径创建HookedTransformer: {hooked_model_path}")
+                    print(f"[SAE] HookedTransformer ✅ successfully created from local path:{hooked_model_path}")
                 except Exception as inner_e:
-                    print(f"[SAE] 本地模型加载过程中出错: {inner_e}")
+                    print(f"[SAE] Error during local model loading:{inner_e}")
                     if "CUDA out of memory" in str(inner_e):
-                        print(f"[SAE] 检测到CUDA内存不足，跳过HookedTransformer创建")
-                        print(f"[SAE] 建议：释放其他GPU进程或使用更少的GPU")
+                        print(f"[SAE] Out of CUDA memory detected, skipping HookedTransformer creation")
+                        print(f"[SAE] Recommendation: Release other GPU processes or use fewer GPUs")
                         hooked_model = None
                     else:
                         import traceback
                         traceback.print_exc()
                         raise inner_e
             else:
-                print(f"[SAE] 本地HookedTransformer路径不存在: {hooked_model_path}")
-                raise Exception("本地HookedTransformer路径不存在")
+                print(f"[SAE] Local HookedTransformer path does not exist:{hooked_model_path}")
+                raise Exception("Local HookedTransformer path does not exist")
         except Exception as e:
-            print(f"[SAE] 本地HookedTransformer创建失败: {e}")
+            print(f"[SAE] Failed to create local HookedTransformer:{e}")
             hooked_model = None
         
         # Fallback HF HookedTransformer
         if hooked_model is None:
             try:
-                print(f"[SAE] 尝试从HuggingFace下载HookedTransformer...")
+                print(f"[SAE] Try downloading HookedTransformer from HuggingFace...")
                 
                 # HookedTransformer id per family
                 if 'gemma' in model_name.lower():
                     hooked_model_name = "google/gemma-2-9b"  # Base weights align with SAE training
-                    print(f"[SAE] 检测到Gemma模型，使用HookedTransformer: {hooked_model_name}")
+                    print(f"[SAE] Gemma model detected, using HookedTransformer:{hooked_model_name}")
                 else:
                     hooked_model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
-                    print(f"[SAE] 使用默认HookedTransformer: {hooked_model_name}")
+                    print(f"[SAE] Use the default HookedTransformer:{hooked_model_name}")
                 
                 hooked_model = HookedTransformer.from_pretrained(
                     hooked_model_name, 
                     device=hooked_device
                 )
-                print(f"[SAE] ✅ 成功从HuggingFace创建HookedTransformer: {hooked_model_name}")
+                print(f"[SAE] ✅ Successfully created HookedTransformer from HuggingFace:{hooked_model_name}")
             except Exception as e:
-                print(f"[SAE] HuggingFace创建失败: {e}")
+                print(f"[SAE] HuggingFace creation failed:{e}")
                 hooked_model = None
         
         
         # Verbose errors if all loaders fail
         if hooked_model is None:
-            print(f"[SAE] ⚠️ 所有HookedTransformer创建方法都失败")
-            print(f"[SAE] 模型名称: {model_name}")
-            print(f"[SAE] 目标设备: {hooked_device}")
-            print(f"[SAE] 继续尝试使用原始模型进行SAE分析...")
+            print(f"[SAE] ⚠️ All HookedTransformer creation methods failed")
+            print(f"[SAE] Model Name:{model_name}")
+            print(f"[SAE] Target Device:{hooked_device}")
+            print(f"[SAE] Keep trying to use the original model for SAE analysis...")
         else:
-            print(f"[SAE] ✅ HookedTransformer创建成功")
+            print(f"[SAE] ✅ HookedTransformer created successfully")
         
         return hooked_model
         
     except ImportError:
-        print(f"[SAE] transformer_lens未安装，无法加载HookedTransformer")
+        print(f"[SAE] transformer_lens not installed, unable to load HookedTransformer")
         return None
     except Exception as e:
-        print(f"[SAE] HookedTransformer加载过程中发生错误: {e}")
+        print(f"[SAE] Error during loading of HookedTransformer:{e}")
         import traceback
         traceback.print_exc()
         return None
 
 def list_all_sae_configs():
-    """
-    列出所有可用的SAE配置
-    """
+    """List all available SAE configurations"""
     return {
         'llama_models': ['llama-3.0-8b-instruct', 'llama-3.1-8b-instruct', 'llama-3.2-1b-instruct', 
                         'llama-3.2-3b-instruct', 'llama-3.2-11b-vision-instruct', 'llama-3.3-70b-instruct', 

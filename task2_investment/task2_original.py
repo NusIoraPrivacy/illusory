@@ -258,11 +258,11 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
                         elif attribution_method == "attention_rollout":
                             html_snippet, filtered_tokens, rank_scores = attention_rollout(model_hf, tokenizer, full_dialogue_text, out_prefix, mode="text", device=device, model_type=model_type, model_name=model_name, model_path=model_path)
                         elif attribution_method == "rise_saliency":
-                            print("[RISE] RISE方法跳过文本归因")
+                            print("[rise] rise method skips text attribution")
                         elif attribution_method == "sae":
                             html_snippet, filtered_tokens, rank_scores = sae_attribution(model_hf, tokenizer, full_dialogue_text, out_prefix, mode="text", device=device, model_name=model_name, model_path=model_path, task=2, cycle_num=i+1)
                         else:
-                            raise ValueError(f"不支持的归因方法: {attribution_method}")
+                            raise ValueError(f"Unsupported attribution method:{attribution_method}")
                         with open(out_html, "a", encoding="utf-8") as f_html, open(out_csv, "a", encoding="utf-8", newline='') as f_csv:
                             f_html.write(f"<h2>Cycle {i+1}</h2>\n" + html_snippet + "<hr/>\n")
                             f_csv.write(f"Cycle {i+1}\n")

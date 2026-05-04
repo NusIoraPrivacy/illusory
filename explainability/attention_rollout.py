@@ -11,14 +11,12 @@ import warnings
 RANDOM_STATE = 42
 
 def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, baseline=None, target_label=1, n_steps=20, mode="text", device="cpu", per_token_ig=False, model_type=None, messages=None, model_path=None, head_fusion='max', discard_ratio=0.9, **kwargs):
-    """
-    Attention Rollout归因方法。mode支持'text'或'image'。
-    强制使用eager attention以确保支持output_attentions。
+    """Attention Rollout Attribution method. mode supports' text 'or' image '.
+    Force eager attention to ensure output_attentions are supported.
     
-    参数:
-    - head_fusion: 'mean', 'max', 'min' - 如何融合多个attention头
-    - discard_ratio: 0-1之间的值，过滤掉最低的attention值来减少噪声
-    """
+    Parameters:
+    - head_fusion: 'mean', 'max', 'min' - how to fuse multiple attention heads
+    - discard_ratio: value between 0-1, filter out the lowest attention value to reduce noise"""
     if RANDOM_STATE:
         random.seed(RANDOM_STATE)
     
@@ -43,10 +41,10 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                 if hasattr(layer, 'self_attn') and hasattr(layer.self_attn, '_attn_implementation'):
                     layer.self_attn._attn_implementation = 'eager'
         
-        print("[AR] 已强制设置eager attention实现")
+        print("[AR] Enforced eager attention implementation")
         
     except Exception as e:
-        print(f"[AR] 设置eager attention时出错: {str(e)}")
+        print(f"[AR] Error setting eager attention:{str(e)}")
     
     try:
         ######## Text attribution ########
@@ -89,32 +87,32 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
 
                 # Compute attention rollout — force eager attention
                 with torch.no_grad():
-                    print("[AR] 开始计算attention rollout...")
+                    print("[AR] Start calculating attention rollout...")
                     outputs = model(input_ids=input_ids, output_attentions=True)
                     attentions = outputs.attentions  # Attention from all layers
                     
                     if attentions is None or len(attentions) == 0:
-                        raise Exception("模型未返回attention信息！请检查模型是否支持output_attentions")
+                        raise Exception("Model did not return attention information! Please check if the model supports output_attentions")
                     
-                    print(f"[AR] 成功获取{len(attentions)}层的attention信息")
+                    print(f"[AR] Get Successful{len(attentions)}Layer's attention information")
                     
                     # Compute attention rollout matrix
                     attention_rollout_matrix = compute_attention_rollout(attentions)
                     
                     if attention_rollout_matrix is None:
-                        raise Exception("attention rollout矩阵计算失败！")
+                        raise Exception("attention rollout matrix calculation failed!")
                     
-                    print(f"[AR] attention rollout矩阵计算成功: {attention_rollout_matrix.shape}")
+                    print(f"[AR] Attention rollout matrix calculated successfully:{attention_rollout_matrix.shape}")
                 
                 # Stats for attention rollout matrix
                 seq_len = attention_rollout_matrix.shape[0]
-                print(f"[AR] attention rollout矩阵形状: {attention_rollout_matrix.shape}")
-                print(f"[AR] attention rollout矩阵统计: min={attention_rollout_matrix.min():.6f}, max={attention_rollout_matrix.max():.6f}, mean={attention_rollout_matrix.mean():.6f}")
+                print(f"[AR] attention rollout matrix shape:{attention_rollout_matrix.shape}")
+                print(f"[AR] attention rollout matrix statistics: min ={attention_rollout_matrix.min():.6f}, max={attention_rollout_matrix.max():.6f}, mean={attention_rollout_matrix.mean():.6f}")
                 
                 # For attention rollout, use mean attention over tokens as attribution
                 # Standard attention rollout
                 avg_attention = attention_rollout_matrix.mean(dim=0).cpu().numpy()  # Average over all tokens
-                print(f"[AR] 平均attention统计: min={avg_attention.min():.6f}, max={avg_attention.max():.6f}, mean={avg_attention.mean():.6f}")
+                print(f"[AR] Average attention stats: min ={avg_attention.min():.6f}, max={avg_attention.max():.6f}, mean={avg_attention.mean():.6f}")
                 
                 # Ensure length match
                 if len(avg_attention) >= end_idx:
@@ -128,9 +126,9 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                         # If still too short, repeat
                         filtered_attributions = [avg_attention[idx % len(avg_attention)] for idx in filtered_indices]
                 
-                print(f"[AR] 提取的attention scores数量: {len(filtered_attributions)}")
-                print(f"[AR] 前5个attention scores: {filtered_attributions[:5]}")
-                print(f"[AR] 非零scores数量: {sum(1 for s in filtered_attributions if abs(s) > 1e-6)}")
+                print(f"[AR] Number of attention scores extracted:{len(filtered_attributions)}")
+                print(f"[AR] Top 5 attention scores:{filtered_attributions[:5]}")
+                print(f"[AR] Non-zero number of scores:{sum(1 for s in filtered_attributions if abs(s) > 1e-6)}")
 
                 # Normalize
                 attributions_np = np.array([float(attr) for attr in filtered_attributions])
@@ -202,7 +200,7 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                 html_file_path = os.path.join(attention_rollout_dir, f"{base_name}_attention_rollout.html")
                 with open(html_file_path, 'w', encoding='utf-8') as f:
                     f.write(html)
-                print(f"[AR] 文本attention rollout结果已保存到: {html_file_path}")
+                print(f"[AR] Text attention rollout result saved to:{html_file_path}")
                 
                 # Save token scores to CSV
                 import csv
@@ -212,13 +210,13 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                     writer.writerow(['token', 'attention_score'])
                     for token, score in zip(all_filtered_tokens, all_rank_scores):
                         writer.writerow([token, score])
-                print(f"[AR] 文本attention rollout数据已保存到: {csv_file_path}")
+                print(f"[AR] Text attention rollout data saved to:{csv_file_path}")
             
             return html, all_filtered_tokens, all_rank_scores
 
         ######## Image attribution ########
         elif mode == "image":
-            print("[AR] 为Qwen2.5-VL模型使用视觉分支Attention Rollout归因方法")
+            print("[AR] Use the visual branch Attention Rollout attribution method for the Qwen2.5-VL model")
             try:
                 if isinstance(input_data, (Image.Image, np.ndarray, torch.Tensor)):
                     img = input_data
@@ -235,9 +233,9 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                         image_grid_thw = processed.image_grid_thw.to(model_device)
                     else:
                         image_grid_thw = None
-                        print("[AR] 警告：处理器没有image_grid_thw属性，跳过该属性")
+                        print("[AR] Warning: Processor does not have image_grid_thw property, skipping it")
 
-                    print(f"[AR] 处理后的图像张量 shape: {pixel_values.shape}")
+                    print(f"[AR] Processed image tensor shape:{pixel_values.shape}")
 
                     # Visual attention rollout (vit-explain style)
                     attention_rollout_matrix = None  # Initialize variables
@@ -248,16 +246,16 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                         elif hasattr(model, 'visual'):
                             vision_tower = model.visual
                         else:
-                            raise AttributeError(f"模型 {type(model).__name__} 没有找到视觉组件")
+                            raise AttributeError(f"Models{type(model).__name__}No visual components found")
                         
                         # vit-explain-style implementation
-                        print("[AR] 使用vit-explain方法实现attention rollout")
+                        print("[AR] Attention rollout using vit-explain method")
                         
                         # Store per-layer attention matrices
                         attentions = []
                         
                         def attention_hook(module, input, output):
-                            """Hook函数来捕获attention信息 - 基于vit-explain"""
+                            """Hook function to capture attention information - based on vit-explain"""
                             # Check whether outputs include attention
                             if hasattr(output, 'attentions') and output.attentions is not None:
                                 attentions.extend(output.attentions)
@@ -272,7 +270,7 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                                     attn = module._attention_weights
                                     if attn is not None:
                                         attentions.append(attn.clone())
-                                        print(f"[AR] 从{module.__class__.__name__}获取attention: {attn.shape}")
+                                        print(f"[AR] From{module.__class__.__name__}Getting attention:{attn.shape}")
                         
                         # Register hooks on attention layers
                         hooks = []
@@ -280,10 +278,10 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                             if 'attn' in name.lower() and not name.endswith('.qkv') and not name.endswith('.proj'):
                                 hook = module.register_forward_hook(attention_hook)
                                 hooks.append(hook)
-                                print(f"[AR] 注册hook到: {name}")
+                                print(f"[AR] Register hook to:{name}")
                         
                         # Run vision tower
-                        print("[AR] 运行vision tower...")
+                        print("[AR] Running vision tower...")
                         vision_output = vision_tower(pixel_values, image_grid_thw)
                         
                         # Remove hooks
@@ -292,7 +290,7 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                         
                         # Fallback vit-explain path if no attention
                         if not attentions:
-                            print("[AR] 使用vit-explain备用方法创建attention")
+                            print("[AR] Create attention using the vit-explain alternate method")
                             
                             # Vision tower output features
                             features = None
@@ -314,7 +312,7 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                                 elif len(features.shape) == 4:
                                     features = features.flatten(2).transpose(1, 2)
                                 
-                                print(f"[AR] 特征shape: {features.shape}")
+                                print(f"[AR] Feature shape:{features.shape}")
                                 
                                 # Build attention vit-explain-style
                                 seq_len = features.shape[1]
@@ -335,36 +333,36 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                                     attention_matrix = attention_matrix.unsqueeze(1).repeat(1, 8, 1, 1)
                                     
                                     attentions.append(attention_matrix)
-                                    print(f"[AR] 创建attention层{i}: {attention_matrix.shape}")
+                                    print(f"[AR] Create attention layer{i}: {attention_matrix.shape}")
                         
                         if not attentions:
-                            raise Exception("无法获取任何attention信息！")
+                            raise Exception("Could not get any attention information!")
                         
-                        print(f"[AR] 成功获取{len(attentions)}层attention")
+                        print(f"[AR] Get Successful{len(attentions)}Layer attention")
                         
                         # If attention exists, compute rollout
                         if attentions is not None and len(attentions) > 0:
-                            print(f"[AR] 开始计算attention rollout，共{len(attentions)}层")
-                            print(f"[AR] 使用head_fusion='{head_fusion}', discard_ratio={discard_ratio}")
+                            print(f"[AR] Start calculating attention rollout of{len(attentions)}Layer")
+                            print(f"[AR] Use head_fusion = '{head_fusion}', discard_ratio={discard_ratio}")
                             attention_rollout_matrix = compute_attention_rollout(attentions, head_fusion=head_fusion, discard_ratio=discard_ratio)
                             
                             if attention_rollout_matrix is None:
-                                raise Exception("Attention rollout矩阵计算失败！无法获取有效的attention信息")
+                                raise Exception("Attention rollout matrix calculation failed! Unable to get valid attention information")
                             
                             # CLS token attention rollout
                             cls_attention, cls_pos = extract_cls_attention(attention_rollout_matrix)
-                            print(f"[AR] 使用CLS token位置: {cls_pos}, attention shape: {cls_attention.shape}")
+                            print(f"[AR] Use CLS token location:{cls_pos}, attention shape: {cls_attention.shape}")
                             
                             # Reshape to grid (non-square ok)
                             num_patches = cls_attention.shape[0]
-                            print(f"[AR] Patch数量: {num_patches}")
+                            print(f"[AR] Number of patches:{num_patches}")
                             
                             # Find nearest grid size
                             grid_size = int(np.sqrt(num_patches))
                             if grid_size * grid_size == num_patches:
                                 # Perfect square → square grid
                                 attr_grid = cls_attention.reshape(grid_size, grid_size)
-                                print(f"[AR] 使用正方形网格: {grid_size}x{grid_size}")
+                                print(f"[AR] Use a square grid:{grid_size}x{grid_size}")
                             else:
                                 # Else try rectangular factorization
                                 # Nearest factor pair
@@ -381,7 +379,7 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                                 
                                 if best_h * best_w == num_patches:
                                     attr_grid = cls_attention.reshape(best_h, best_w)
-                                    print(f"[AR] 使用矩形网格: {best_h}x{best_w}")
+                                    print(f"[AR] Using rectangular meshes:{best_h}x{best_w}")
                                 else:
                                     # Else pad
                                     # Next perfect square
@@ -390,7 +388,7 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                                     padded_attention = np.pad(cls_attention, (0, padding_size), mode='constant', constant_values=0)
                                     grid_size = int(np.sqrt(next_square))
                                     attr_grid = padded_attention.reshape(grid_size, grid_size)
-                                    print(f"[AR] 使用填充网格: {grid_size}x{grid_size} (填充了{padding_size}个patch)")
+                                    print(f"[AR] Use fill grid:{grid_size}x{grid_size}(Filled with{padding_size}patch)")
                             
                             # Interpolate to target size
                             attr_tensor = torch.from_numpy(attr_grid).unsqueeze(0).unsqueeze(0).float()
@@ -408,9 +406,9 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                             else:
                                 attr_map = np.ones_like(attr_map) * 0.5
                             
-                            print(f"[AR] 最终归因图shape: {attr_map.shape}")
+                            print(f"[AR] Final attribution graph shape:{attr_map.shape}")
                         else:
-                            raise Exception("所有方法都失败了！Qwen2.5-VL模型不支持attention rollout归因方法！")
+                            raise Exception("All methods failed! The Qwen2.5-VL model does not support the attention rollout attribution method!")
 
                     # Save image
                     if out_prefix:
@@ -459,7 +457,7 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                         ]
                         
                         for params in param_combinations:
-                            print(f"[AR] 生成参数组合: {params}")
+                            print(f"[AR] Generate parameter combinations:{params}")
                             
                             # Recompute attention rollout
                             rollout_matrix = compute_attention_rollout(attentions, 
@@ -534,10 +532,10 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                                 plt.savefig(os.path.join(attention_rollout_dir, f"{base_name}_overlay_{suffix}.png"), dpi=150, bbox_inches='tight')
                                 plt.close()
                                 
-                                print(f"[AR] 保存参数组合结果: {suffix}")
+                                print(f"[AR] Save parameter combination results:{suffix}")
                         
                         # Default run with original params
-                        print(f"[AR] 生成默认结果: head_fusion='{head_fusion}', discard_ratio={discard_ratio}")
+                        print(f"[AR] Generate default result: head_fusion = '{head_fusion}', discard_ratio={discard_ratio}")
                         
                         # Compare: original + grayscale heatmap
                         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
@@ -597,12 +595,12 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
                         plt.close()
 
                     if attention_rollout_matrix is None:
-                        raise Exception("Attention rollout矩阵为None！无法完成attention rollout归因！")
+                        raise Exception("Attention rollout matrix is None! Unable to complete attention rollout attribution!")
                     return attr_map, img, attention_rollout_matrix
                 else:
-                    raise ValueError(f"input_data类型不支持: {type(input_data)}")
+                    raise ValueError(f"the input_data type does not support:{type(input_data)}")
             except Exception as e:
-                print(f"[AR] 计算视觉分支Attention Rollout时出错: {str(e)}")
+                print(f"[AR] Error calculating visual branch Attention Rollout:{str(e)}")
                 import traceback
                 traceback.print_exc()
                 raise e
@@ -618,15 +616,13 @@ def attention_rollout(model, tokenizer_or_processor, input_data, out_prefix, bas
             if hasattr(model, 'config') and original_model_attn is not None:
                 model.config._attn_implementation = original_model_attn
             
-            print("[AR] 已恢复原始attention实现设置")
+            print("[AR] Original attention implementation settings restored")
         except Exception as cleanup_e:
-            print(f"[AR] 恢复attention设置时出错: {str(cleanup_e)}")
+            print(f"[AR] Error restoring attention settings:{str(cleanup_e)}")
 
 def extract_cls_attention(attention_rollout_matrix, cls_token_idx=0):
-    """
-    从attention rollout矩阵中提取CLS token的attention
-    处理不同的token排列方式
-    """
+    """Extract the CLS token's attention from the attention rollout matrix
+    Handle different token arrangements"""
     seq_len = attention_rollout_matrix.shape[0]
     
     # Try alternate CLS positions
@@ -648,25 +644,23 @@ def extract_cls_attention(attention_rollout_matrix, cls_token_idx=0):
                 return cls_attention, cls_pos
     
     # Fallback: mean attention
-    print("[AR] 警告：无法找到有效的CLS token位置，使用平均attention")
+    print("[AR] Warning: Unable to find valid CLS token location, use average attention")
     avg_attention = attention_rollout_matrix.mean(dim=0).cpu().numpy()
     return avg_attention[1:] if avg_attention.shape[0] > 1 else avg_attention, 0
 
 def compute_attention_rollout(attentions, head_fusion='mean', discard_ratio=0.9):
-    """
-    计算attention rollout矩阵 - 基于vit-explain实现
-    实现标准的Attention Rollout算法，包含恒等矩阵处理残差连接
-    参考: https://arxiv.org/abs/2005.00928 和 https://github.com/jacobgil/vit-explain
-    """
+    """Calculate attention rollout matrix - based on vit-explain implementation
+    Implement standard Attention Rollout algorithm with identity matrix handling residual connections
+    Reference: https://arxiv.org/abs/2005.00928 and https://github.com/jacobgil/vit-explain"""
     if not attentions:
-        print("[AR] 警告：attentions为空")
+        print("[AR] Warning: Empty attentions")
         return None
     
     # All-layer attention matrices
     attention_matrices = []
     for layer_idx, layer_attentions in enumerate(attentions):
         if layer_attentions is None:
-            print(f"[AR] 警告：第{layer_idx}层attention为None，跳过")
+            print(f"[AR] Warning: pg.{layer_idx}Layer attention is None, skipping")
             continue
         try:
             # Multi-head attention (vit-explain)
@@ -694,17 +688,17 @@ def compute_attention_rollout(attentions, head_fusion='mean', discard_ratio=0.9)
                     # Zero lowest attentions
                     flat.scatter_(1, indices, 0)
                 layer_attention = flat.view(layer_attention.size())
-                print(f"[AR] 应用discard_ratio={discard_ratio}，保留{keep_count}个最高attention值")
+                print(f"[AR] Apply discard_ratio ={discard_ratio}Simpan{keep_count}highest attention values")
             
             attention_matrices.append(layer_attention)
-            print(f"[AR] 处理第{layer_idx}层attention: {layer_attention.shape}")
+            print(f"[AR] Processing section{layer_idx}Layer attention:{layer_attention.shape}")
             
         except Exception as e:
-            print(f"[AR] 警告：处理第{layer_idx}层attention时出错: {str(e)}")
+            print(f"[AR] Warning: Processing the{layer_idx}Error layering attention:{str(e)}")
             continue
     
     if not attention_matrices:
-        print("[AR] 警告：没有有效的attention矩阵")
+        print("[AR] Warning: No valid attention matrix")
         return None
     
     num_layers = len(attention_matrices)
@@ -726,5 +720,5 @@ def compute_attention_rollout(attentions, head_fusion='mean', discard_ratio=0.9)
         # Update rollout matrix
         rollout_matrix = torch.matmul(rollout_matrix, modified_attention)
     
-    print(f"[AR] Attention rollout矩阵计算完成: {rollout_matrix.shape}, 层数: {num_layers}")
+    print(f"[AR] Attention rollout matrix calculation complete:{rollout_matrix.shape}Layers{num_layers}")
     return rollout_matrix  # [seq_len, seq_len]

@@ -240,20 +240,20 @@ def main():
     input_excel = "./extracted_results/chatgpt_last_replies.xlsx"
     
     if not os.path.exists(input_excel):
-        print(f"错误: 找不到输入文件 {input_excel}")
-        print("请先运行第一步: python extract_txt_to_excel.py")
+        print(f"Error: Input file not found: {input_excel}")
+        print("Please run the first step first: python extract_txt_to_excel.py")
         return
     
     print("=" * 60)
-    print("开始第二步：分析Excel中的回复")
+    print("Start Step 2: Analyze responses in Excel")
     print("=" * 60)
     
     try:
         df = pd.read_excel(input_excel, engine="openpyxl")
-        print(f"成功读取Excel文件，包含 {len(df)} 行数据")
+        print(f"Successfully read Excel file containing {len(df)} rows")
         
         # Required cols incl. Role, COT, Temperature
-        required_columns = ["Cycle", "ChatGPT最后回复", "Role", "COT", "Temperature"]
+        required_columns = ["Cycle", "ChatGPT Last Reply", "Role", "COT", "Temperature"]
         if not all(col in df.columns for col in required_columns):
             print(f"Error: Excel file missing required columns: {required_columns}")
             return
@@ -344,7 +344,7 @@ def main():
     for index in reversed(df.index):
         row = df.loc[index]
         cycle = str(row["Cycle"])
-        reply = str(row["ChatGPT最后回复"])
+        reply = str(row["ChatGPT Last Reply"])
         
         # Get all information first (needed for both checking and processing)
         task = str(row["Task"])
@@ -438,7 +438,7 @@ def main():
         print("=" * 60)
         
         # Display statistics
-        print("\n统计信息:")
+        print("Statistics")
         
         # Task distribution
         task_counts = existing_df['Task'].value_counts()

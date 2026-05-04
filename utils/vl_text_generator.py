@@ -104,18 +104,18 @@ def get_vl_text_generator(model_path, model_name=None, return_model=False, **kwa
                             
                     return processor.batch_decode(outputs[:, input_len:])[0].strip()
                 except Exception as e:
-                    print(f"gemma-3-27b-it 生成失败: {e}")
-                    return f"模型生成错误: {str(e)}"
+                    print(f"gemma-3-27b-it generation failed:{e}")
+                    return f"Model generation error:{str(e)}"
                     
             if return_model:
                 return generate, model, processor
             else:
                 return generate
         except Exception as e:
-            print(f"加载 gemma-3-27b-it 模型时出错: {e}")
+            print(f"Error loading gemma-3-27b-it model:{e}")
             error_msg = str(e)
             def error_generate(messages, **gen_kwargs):
-                return f"模型加载错误: {error_msg}"
+                return f"Model loading error:{error_msg}"
             if return_model:
                 return error_generate, None, None
             else:
@@ -157,7 +157,7 @@ def get_vl_text_generator(model_path, model_name=None, return_model=False, **kwa
             return generate
     else:
         def error_generate(messages, **gen_kwargs):
-            return "不支持的模型类型"
+            return "Unsupported model type"
         if return_model:
             return error_generate, None, None
         else:

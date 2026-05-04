@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-"""
-Step 2: SAE特征Steering实验 - 完整Task 2对话流程版本
-基于 task2_original.py（没有新prompt的版本）
-"""
+"""Step 2: SAE Characteristics Steering Experiment - Full Task 2 Dialogue Process Version
+Based on task2_original.py (no new prompt version)"""
 
 import os
 import sys
@@ -23,13 +21,13 @@ try:
     SAE_AVAILABLE = True
     print("SAE libraries loaded successfully")
 except ImportError as e:
-    print(f"SAE或TransformerLens导入失败: {e}")
-    print("将使用简化实现")
+    print(f"SAE or TransformerLens import failed:{e}")
+    print("Will use simplified implementation")
     SAE_AVAILABLE = False
 
 
 def get_available_gpu():
-    """查找并返回可用的GPU设备"""
+    """Find and return available GPU devices"""
     if not torch.cuda.is_available():
         return "cpu"
     
@@ -41,7 +39,7 @@ def get_available_gpu():
                                capture_output=True, text=True, timeout=5)
         
         if result.returncode != 0:
-            print("无法运行nvidia-smi，使用默认GPU")
+            print("Cannot run nvidia-smi, using default GPU")
             return "cuda:0"
         
         gpu_info = []
@@ -59,10 +57,10 @@ def get_available_gpu():
                     'total': memory_total,
                     'util': gpu_util
                 })
-                print(f"  GPU {gpu_id}: 已使用 {memory_used:.2f}GB / 总计 {memory_total:.2f}GB (利用率 {gpu_util}%)")
+                print(f"  GPU {gpu_id}Uses:{memory_used:.2f}GB/Total{memory_total:.2f}GB (Utilization{gpu_util}%)")
         
         if not gpu_info:
-            print("未找到GPU信息，使用默认GPU")
+            print("GPU info not found, using default GPU")
             return "cuda:0"
         
         # Prefer idle GPU (<5% mem & <10% util)
@@ -76,25 +74,25 @@ def get_available_gpu():
             # Among idle pick lowest usage
             best_gpu = sorted(free_gpus, key=lambda x: (x['used'], x['util']))[0]
             memory_percent = (best_gpu['used'] / best_gpu['total']) * 100
-            print(f"选择空闲GPU: cuda:{best_gpu['id']} (已使用 {best_gpu['used']:.2f}GB/{best_gpu['total']:.2f}GB, {memory_percent:.1f}%, 利用率 {best_gpu['util']}%)")
+            print(f"Select free GPU: cuda:{best_gpu['id']} (used){best_gpu['used']:.2f}GB/{best_gpu['total']:.2f}GB, {memory_percent:.1f}Utilization, %{best_gpu['util']}%)")
             return f"cuda:{best_gpu['id']}"
         
         # Else pick least-used GPU
         best_gpu = sorted(gpu_info, key=lambda x: (x['used'], x['util']))[0]
         memory_percent = (best_gpu['used'] / best_gpu['total']) * 100
-        print(f"⚠️  警告: 没有完全空闲的GPU，选择使用最少的: cuda:{best_gpu['id']} (已使用 {best_gpu['used']:.2f}GB/{best_gpu['total']:.2f}GB, {memory_percent:.1f}%, 利用率 {best_gpu['util']}%)")
+        print(f"⚠️  Warning: There is no fully idle GPU, choose the least used: cuda:{best_gpu['id']} (used){best_gpu['used']:.2f}GB/{best_gpu['total']:.2f}GB, {memory_percent:.1f}Utilization, %{best_gpu['util']}%)")
         return f"cuda:{best_gpu['id']}"
         
     except Exception as e:
-        print(f"检测GPU时出错: {e}，使用默认GPU")
+        print(f"Error detecting GPU:{e}, use default GPU")
         return "cuda:0"
 
 
 def calculate_activation_differences(before_file: str, after_file: str) -> Dict[int, float]:
-    """计算修改前后的激活差异"""
-    print(f"计算激活差异:")
-    print(f"  修改前: {before_file}")
-    print(f"  修改后: {after_file}")
+    """Calculate activation difference before and after modification"""
+    print(f"Calculate Activation Difference:")
+    print(f"Before modification{before_file}")
+    print(f"Post Modified{after_file}")
     
     # Load pre-edit activations
     before_features = {}
@@ -146,16 +144,16 @@ def calculate_activation_differences(before_file: str, after_file: str) -> Dict[
         differences[feature_id] = after_val - before_val
     
     if not differences:
-        print("Error: 无法加载激活数据")
+        print("Error: Unable to load activation data")
         return {}
     
-    print(f"计算完成，总特征数: {len(differences)}")
+    print(f"Calculation completed, total number of features:{len(differences)}")
     return differences
 
 
 def calculate_average_activation_differences(model_mode: str = "explain") -> Dict[int, float]:
-    """计算所有可用cycle的平均激活差异"""
-    print(f"计算所有可用cycle的平均激活差异 (模式: {model_mode})")
+    """Calculate the average activation difference for all available cycles"""
+    print(f"Calculate the average activation difference for all available cycles (Mode:{model_mode})")
     
     # Detect usable cycles
     before_dir = "before/results_before/explainability/task2/sae_attribution"
@@ -191,10 +189,10 @@ def calculate_average_activation_differences(model_mode: str = "explain") -> Dic
         if os.path.exists(before_file) and os.path.exists(after_file):
             common_cycles.append(cycle_num)
     
-    print(f"找到 {len(common_cycles)} 个可用的cycle: {sorted(common_cycles)[:10]}{'...' if len(common_cycles) > 10 else ''}")
+    print(f"Found {len(common_cycles)}cycles available:{sorted(common_cycles)[:10]}{'...' if len(common_cycles) > 10 else ''}")
     
     if not common_cycles:
-        print("Error: 没有找到可用的cycle数据")
+        print("Error: No cycle data available")
         return {}
     
     # Per-cycle delta
@@ -206,10 +204,10 @@ def calculate_average_activation_differences(model_mode: str = "explain") -> Dic
         differences = calculate_activation_differences(before_file, after_file)
         if differences:
             all_differences.append(differences)
-            print(f"  Cycle {cycle_num}: {len(differences)} 个特征")
+            print(f"  Cycle {cycle_num}: {len(differences)}features")
     
     if not all_differences:
-        print("Error: 没有有效的差异数据")
+        print("Error: No valid variance data")
         return {}
     
     # Mean delta across cycles
@@ -222,27 +220,27 @@ def calculate_average_activation_differences(model_mode: str = "explain") -> Dic
         values = [diff_dict.get(feature_id, 0.0) for diff_dict in all_differences]
         average_differences[feature_id] = sum(values) / len(values)
     
-    print(f"计算完成，总特征数: {len(average_differences)}")
-    print(f"最大平均差异: {max(average_differences.values()):.6f}")
-    print(f"最小平均差异: {min(average_differences.values()):.6f}")
+    print(f"Calculation completed, total number of features:{len(average_differences)}")
+    print(f"Maximum average variance:{max(average_differences.values()):.6f}")
+    print(f"Minimum average difference:{min(average_differences.values()):.6f}")
     
     return average_differences
 
 
 def select_top_k_features(differences: Dict[int, float], k: int) -> List[int]:
-    """选择Top-K特征（按绝对差异值排序）"""
+    """Select Top-K features (sorted by absolute difference value)"""
     sorted_features = sorted(differences.items(), key=lambda x: abs(x[1]), reverse=True)
     top_k_features = [feat_id for feat_id, _ in sorted_features[:k]]
     
-    print(f"选择Top-{k}特征:")
+    print(f"Select top-{k} features:")
     for i, (feat_id, diff_val) in enumerate(sorted_features[:k]):
-        print(f"  {i+1}. 特征 {feat_id}: 差异 = {diff_val:.6f}")
+        print(f"  {i+1}. Feature {feat_id}: difference = {diff_val:.6f}")
     
     return top_k_features
 
 
 def load_sae_and_model(model_name: str = "Llama-3.0-8B-Instruct"):
-    """加载SAE和HookedTransformer"""
+    """Load SAE and HookedTransformer"""
     if not SAE_AVAILABLE:
         print("Error: SAELens not available")
         return None, None, None
@@ -304,15 +302,15 @@ def load_sae_and_model(model_name: str = "Llama-3.0-8B-Instruct"):
 def run_complete_task2_dialogue(hooked_model, messages: List[dict], top_k_features: List[int], 
                                differences: Dict[int, float], scale_factor: float = 0.01,
                                sae=None, hook_name=None) -> str:
-    """运行完整的Task 2对话流程，只在最后的选择题回答时应用steering"""
+    """Run the full Task 2 conversation process, applying steering only when answering the final multiple-choice question"""
     
-    print(f"运行完整Task 2对话流程:")
-    print(f"  Top-K特征: {top_k_features}")
-    print(f"  缩放因子: {scale_factor}")
+    print(f"Run the full Task 2 conversation process:")
+    print(f"Top-K features:{top_k_features}")
+    print(f"Scaling Factors{scale_factor}")
     
     if sae is None or hooked_model is None:
-        print("Error: SAE或HookedTransformer未提供，无法进行steering")
-        return "Error: SAE或HookedTransformer未提供"
+        print("Error: SAE or HookedTransformer not available for steering")
+        return "Error: SAE or HookedTransformer not provided"
     
     try:
         # Build full dialogue string
@@ -323,7 +321,7 @@ def run_complete_task2_dialogue(hooked_model, messages: List[dict], top_k_featur
             elif msg["role"] == "assistant":
                 full_text += f"Assistant: {msg['content']}\n"
         
-        print(f"  完整对话文本长度: {len(full_text)} 字符")
+        print(f"Full conversation text length:{len(full_text)}characters. ")
         
         # gc before forward
         if torch.cuda.is_available():
@@ -375,12 +373,12 @@ def run_complete_task2_dialogue(hooked_model, messages: List[dict], top_k_featur
                     # Positive delta steering
                     enhancement = torch.randn_like(steered_hidden) * scale_factor * abs(diff_val) * 0.001
                     steered_hidden += enhancement
-                    print(f"    特征 {feat_id}: 差异={diff_val:.2f}, 增强激活")
+                    print(f"    Feature {feat_id}: diff={diff_val:.2f}, strengthened activation")
                 else:
                     # Negative delta steering
                     reduction = torch.randn_like(steered_hidden) * scale_factor * abs(diff_val) * 0.001
                     steered_hidden -= reduction
-                    print(f"    特征 {feat_id}: 差异={diff_val:.2f}, 减弱激活")
+                    print(f"    Feature {feat_id}: diff={diff_val:.2f}, weakened activation")
         
         print(f"  Steered hidden shape: {steered_hidden.shape}")
         
@@ -411,7 +409,7 @@ def run_complete_task2_dialogue(hooked_model, messages: List[dict], top_k_featur
         
         # Decode tokens
         steered_text = hooked_model.to_string(generated_tokens[0])
-        print(f"  Steering后生成长度: {len(steered_text)} 字符")
+        print(f"Post-Steering Generation Length:{len(steered_text)}characters. ")
         
         # Free memory
         del tokens, target_hidden, steered_hidden, generated_tokens
@@ -425,16 +423,16 @@ def run_complete_task2_dialogue(hooked_model, messages: List[dict], top_k_featur
         print(f"Error in complete dialogue steering: {e}")
         import traceback
         traceback.print_exc()
-        return f"Steering错误: {str(e)}"
+        return f"Steering Error:{str(e)}"
 
 
 def run_step2_experiment_with_average(cycle_nums: List[int] = [1, 2], k: int = 10, 
                                      scale_factor: float = 0.001, num_runs: int = 10, 
                                      model_mode: str = "explain"):
-    """运行Step 2实验 - 使用平均差异，运行多轮"""
+    """Running the Step 2 Experiment - Running Multiple Rounds Using Average Differences"""
     
-    print(f"=== Step 2 实验 (平均差异, {num_runs}轮) ===")
-    print(f"自动检测所有可用的cycle并计算平均差异")
+    print(f"= = = Step 2 experiment (mean difference,{num_runs}rounds")
+    print(f"Automatically detects all available cycles and calculates average differences")
     
     # RNG seed aligned with task2_original.py
     RANDOM_STATE = 42
@@ -444,19 +442,19 @@ def run_step2_experiment_with_average(cycle_nums: List[int] = [1, 2], k: int = 1
     # Mean Δ activations
     differences = calculate_average_activation_differences(model_mode=model_mode)
     if not differences:
-        print("Error: 无法计算平均激活差异")
+        print("Error: Unable to calculate average activation difference")
         return None
     
     # Select top-K features
     top_k_features = select_top_k_features(differences, k)
-    print(f"选择Top-{k}特征: {top_k_features}")
+    print(f"Selected top-{k} features: {top_k_features}")
     
     # Load SAE + LM
-    print("\n--- 加载SAE和HookedTransformer ---")
+    print("--- Load SAE and HookedTransformer ---")
     sae, hooked_model, hook_name = load_sae_and_model("Llama-3.0-8B-Instruct")
     
     if sae is None or hooked_model is None:
-        print("Error: 无法加载SAE或HookedTransformer，实验终止")
+        print("Error: Unable to load SAE or HookedTransformer, experiment terminated")
         return None
     
     # Task2 pipeline from task2_original.py
@@ -588,7 +586,7 @@ If you could purchase only one company's stock, would you purchase Company A or 
     file_name = f"model_Llama-3.0-8B-Instruct_mode_{model_mode}_steered_temperature_1.0_cycles_{num_runs}.txt"
     file_path = os.path.join(output_dir, file_name)
     
-    print(f"\n--- 开始{num_runs}轮Steering实验 ---")
+    print(f"\n--- Starting {num_runs}-run steering experiment ---")
     
     with open(file_path, "w", encoding="utf-8") as f:
         def log_and_print(message):
@@ -596,13 +594,13 @@ If you could purchase only one company's stock, would you purchase Company A or 
             f.write(message)
         
         for run in range(num_runs):
-            print(f"\n第 {run+1}/{num_runs} 轮:")
+            print(f"\nRun {run+1}/{num_runs}:")
             
             # Pick evaluation cycle
             current_prompts, majority_group = all_cycles[run % len(all_cycles)]
             
             # Log cycle metadata
-            cycle_info = f"====================\nCycle {run + 1}/{num_runs}: Steering实验 (Majority Company: {majority_group})\n====================\n"
+            cycle_info = f"====================\nCycle {run + 1}/{num_runs}: Steering Experiment (Majority Company:{majority_group})\n====================\n"
             log_and_print(cycle_info)
             
             # Build chat messages
@@ -623,7 +621,7 @@ If you could purchase only one company's stock, would you purchase Company A or 
             
             # Progress every 10 cycles
             if (run + 1) % 10 == 0:
-                print(f"已完成 {run+1}/{num_runs} 轮")
+                print(f"Completed {run+1}/{num_runs} runs")
         
         # Completion banner
         log_and_print("\n====================\n")
@@ -632,31 +630,31 @@ If you could purchase only one company's stock, would you purchase Company A or 
         log_and_print(f"Results logged to: {file_path}\n")
         log_and_print("====================\n")
     
-    print(f"\n🎉 Steering实验完成！")
-    print(f"结果已保存到: {file_path}")
-    print(f"Top-K特征: {top_k_features}")
-    print(f"缩放因子: {scale_factor}")
+    print(f"\n🎉 Steering experiment complete!")
+    print(f"Results saved to:{file_path}")
+    print(f"Top-K features:{top_k_features}")
+    print(f"Scaling Factors{scale_factor}")
     
     return file_path
 
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="运行Step 2特征Steering实验")
+    parser = argparse.ArgumentParser(description="Run Step 2 Feature Steering Experiment")
     parser.add_argument("--mode", type=str, default="average", choices=["single", "average"],
-                       help="实验模式: single(单个cycle) 或 average(平均差异)")
+                       help="Experimental mode: single (single cycle) or average (average difference)")
     parser.add_argument("--model_mode", type=str, default="explain", choices=["explain", "direct"],
-                       help="模型模式: explain 或 direct")
+                       help="Model mode: explain or direct")
     parser.add_argument("--cycle", type=int, default=1, choices=[1, 2],
-                       help="Cycle编号 (仅single模式)")
+                       help="Cycle number (single mode only)")
     parser.add_argument("--cycles", type=int, nargs='+', default=[1, 2],
-                       help="Cycle编号列表 (仅average模式)")
+                       help="List of Cycle Numbers (average mode only)")
     parser.add_argument("--k", type=int, default=10,
-                       help="Top-K特征数量")
+                       help="Number of Top-K features")
     parser.add_argument("--scale", type=float, default=0.001,
-                       help="缩放因子")
+                       help="Scaling Factors")
     parser.add_argument("--runs", type=int, default=10,
-                       help="运行轮数 (仅average模式)")
+                       help="Number of running rounds (average mode only)")
     
     args = parser.parse_args()
     
@@ -669,10 +667,10 @@ def main():
             model_mode=args.model_mode
         )
         if results:
-            print("\n🎉 Step 2平均差异实验完成！")
-            print(f"结果文件: {results}")
+            print("🎉 Step 2 The average difference experiment is complete!")
+            print(f"results file{results}")
         else:
-            print("\n❌ Step 2平均差异实验失败！")
+            print("❌ Step 2 The average difference experiment failed!")
 
 
 if __name__ == "__main__":

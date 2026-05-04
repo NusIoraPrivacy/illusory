@@ -8,25 +8,23 @@ from torchvision import transforms as T
 from matplotlib.colors import LinearSegmentedColormap
 
 def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_label=1, mode="image", device="cpu", model_type=None, messages=None, model_path=None, **kwargs):
-    """
-    基于梯度的归因方法，支持图像归因。
-    实现包括：
-    1. 普通梯度归因 (Gradient)
-    2. 梯度×输入 (Gradient × Input)
-    3. 引导反向传播 (Guided Backpropagation)
+    """Gradient-based attribution methods that support image attribution.
+    Implementation includes:
+    1. General Gradient Attribution
+    2. Gradient × Input
+    3. Guided Backpropagation
     
-    - model: 已加载的transformers模型
-    - tokenizer_or_processor: 图像处理器
-    - input_data: 图片tensor或PIL图像
-    - out_prefix: 输出文件前缀（不带后缀）
-    - target_label: 目标类别（图像分类时用）
-    - mode: 仅支持'image'
-    - device: 运行设备
-    """
+    - model: loaded transformers model
+    - tokenizer_or_processor: image processor
+    - input_data: image tensor or PIL image
+    - out_prefix: output file prefix (without suffix)
+    - target_label: target category (for image classification)
+    - mode: only 'image' supported
+    - device: Run the device"""
     if mode != "image":
-        raise ValueError("梯度归因方法仅支持图像归因，请使用mode='image'")
+        raise ValueError("Gradient attribution method only supports image attribution, please use mode = 'image'")
     
-    print("[Gradient] 开始梯度归因...")
+    print("[Gradient] Starting gradient attribution...")
     try:
         if isinstance(input_data, (Image.Image, np.ndarray, torch.Tensor)):
             # Process input image
@@ -49,7 +47,7 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
             model_device = next(model.parameters()).device
             x = transform(img).unsqueeze(0).to(model_device).requires_grad_(True)
             
-            print(f"[Gradient] 输入图像张量 shape: {x.shape}")
+            print(f"[Gradient] Input image tensor shape:{x.shape}")
             
             # Prepare text input
             prompt = "What is in the image?"
@@ -69,7 +67,7 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
             target_token_id = logits.argmax(dim=-1).item()
             score = logits[0, target_token_id]
             
-            print(f"[Gradient] 目标token: {tokenizer_or_processor.tokenizer.convert_ids_to_tokens(target_token_id)}")
+            print(f"[Gradient] Target token:{tokenizer_or_processor.tokenizer.convert_ids_to_tokens(target_token_id)}")
             
             # Backprop gradients
             model.zero_grad()
@@ -212,11 +210,11 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
                 'guided': guided_saliency.numpy()
             }, img, input_grad
         else:
-            raise ValueError(f"input_data类型不支持: {type(input_data)}")
+            raise ValueError(f"the input_data type does not support:{type(input_data)}")
     except Exception as e:
-        print(f"[Gradient] 计算梯度归因时出错: {str(e)}")
-        print(f"[Gradient] 错误类型: {type(e).__name__}")
-        print("[Gradient] 错误追踪:")
+        print(f"[Gradient] Error calculating gradient attribution:{str(e)}")
+        print(f"[Gradient] Error type:{type(e).__name__}")
+        print("[Gradient] Bug Tracking:")
         import traceback
         traceback.print_exc()
         raise e 

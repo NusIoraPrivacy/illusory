@@ -29,7 +29,7 @@ prompt2="""How many tasks are you going to perform?"""
 
 # Direct mode: numeric answer only
 def get_prompt_with_no_think(prompt_text, model_name, mode):
-    """为 Qwen 3 模型添加 /no_think 标签"""
+    """Add/no_think tag to Qwen 3 model"""
     if mode == "direct" and model_name and any(qwen_model in model_name.lower() for qwen_model in ["qwen3"]):
         return prompt_text + " /no_think"
     return prompt_text
@@ -241,11 +241,11 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
                     elif attribution_method == "attention_rollout":
                         html_snippet, filtered_tokens, rank_scores = attention_rollout(model_hf, tokenizer, full_dialogue_text, out_prefix, mode="text", device=device, model_type=model_type, model_name=model_name, model_path=model_path)
                     elif attribution_method == "rise_saliency":
-                        print("[RISE] RISE方法跳过文本归因")
+                        print("[rise] rise method skips text attribution")
                     elif attribution_method == "sae":
                         html_snippet, filtered_tokens, rank_scores = sae_attribution(model_hf, tokenizer, full_dialogue_text, out_prefix, mode="text", device=device, model_name=model_name, model_path=model_path, task=3, cycle_num=i+1)
                     else:
-                        raise ValueError(f"不支持的归因方法: {attribution_method}")
+                        raise ValueError(f"Unsupported attribution method:{attribution_method}")
                     f_html.write(f"<h2>Cycle {i+1}</h2>\n" + html_snippet + "<hr/>\n")
                     f_csv.write(f"Cycle {i+1}\n")
                     f_csv.write("token,score\n")

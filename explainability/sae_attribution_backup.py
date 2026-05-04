@@ -17,7 +17,7 @@ except ImportError:
     SAE_AVAILABLE = False
 
 def process_dialogue_text(full_dialogue_text):
-    """保留完整的对话历史，包含所有提示词"""
+    """Preserve full conversation history with all prompts"""
     # Simple structural validation logging
     if full_dialogue_text:
         # # Check basic prompt keywords
@@ -31,11 +31,11 @@ def process_dialogue_text(full_dialogue_text):
     return full_dialogue_text.strip()
 
 def print_gpu_info():
-    """打印GPU使用情况"""
+    """Print GPU Usage"""
     if torch.cuda.is_available():
-        print(f"[SAE] GPU数量: {torch.cuda.device_count()}")
+        print(f"[SAE] Number of GPUs:{torch.cuda.device_count()}")
     else:
-        print("[SAE] 无GPU可用")
+        print("[SAE] No GPU available")
 
 def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, target_label=1, mode="text", device="cpu", model_type=None, messages=None, model_path=None, task=None, cycle_num=None, generate_top_features=True, **kwargs):
     device = "cpu"
@@ -55,7 +55,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
     sae_id = kwargs.get('sae_id', 'blocks.25.hook_resid_post')
     
     try:
-        print(f"[SAE] SAE使用设备: {device}")
+        print(f"[SAE] Equipment used by SAE:{device}")
         sae_result = SAE.from_pretrained(
             release=sae_release,
             sae_id=sae_id,
@@ -114,18 +114,18 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
 
         hidden_states = outputs.hidden_states
         target_layer = kwargs.get('target_layer', 25)
-        print(f"[SAE] 分析第{target_layer}层隐藏状态，shape: {hidden_states[target_layer].shape}")
+        print(f"[SAE] Analysis of{target_layer}Layer hidden state, shape:{hidden_states[target_layer].shape}")
 
         target_hidden = hidden_states[target_layer]
 
 
         d_model = cfg_dict.get('d_in', 768)
         if target_hidden.shape[-1] != d_model:
-            print(f"[SAE] 维度不匹配，期望 {d_model}，实际 {target_hidden.shape[-1]}")
+            print(f"[SAE] Dimension mismatch, expectation{d_model}actual{target_hidden.shape[-1]}")
             target_hidden = target_hidden.to(torch.float32)
             projection = torch.nn.Linear(target_hidden.shape[-1], d_model, device=device)
             target_hidden = projection(target_hidden)
-            print(f"[SAE] 投影后shape: {target_hidden.shape}")
+            print(f"[SAE] Post-projection shape:{target_hidden.shape}")
 
         # Run SAE on CPU
         target_hidden = target_hidden.to(device)
@@ -136,21 +136,21 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
         
 
 
-        print(f"[SAE] 特征激活shape: {feature_acts.shape}")
-        print(f"[SAE] 重构shape: {reconstructed.shape}")
+        print(f"[SAE] Feature activation shape:{feature_acts.shape}")
+        print(f"[SAE] Refactoring shape:{reconstructed.shape}")
 
 
 
         mse = F.mse_loss(target_hidden, reconstructed).item()
         cosine_sim = F.cosine_similarity(target_hidden, reconstructed, dim=-1).mean().item()
-        print(f"[SAE] 重构MSE: {mse:.6f}, 余弦相似度: {cosine_sim:.6f}")
+        print(f"[SAE] Refactor MSE:{mse:.6f}, cosine similarity:{cosine_sim:.6f}")
 
 
         l0 = (feature_acts[:, 1:] > 0).float().sum(-1).detach()
-        print(f"[SAE] 平均L0: {l0.mean().item():.2f}")
+        print(f"[SAE] Average L0:{l0.mean().item():.2f}")
         
         local_sparsity = (feature_acts == 0).float().mean().item()
-        print(f"[SAE] 局部稀疏性: {local_sparsity:.4f}")
+        print(f"[SAE] Local sparsity:{local_sparsity:.4f}")
 
 
         # Token attribution via feature activation strength (standard)
@@ -187,7 +187,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                     f.write(f"Cycle Number: {cycle_num}\n")
                 f.write(f"Timestamp: {timestamp}\n")
             
-            print(f"[SAE] 已保存配置信息到: {config_file}")
+            print(f"[SAE] Saved configuration information to:{config_file}")
             
             # Active features from existing feature_acts
             
@@ -222,9 +222,9 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                         activation_strength = torch.norm(feature_acts[..., i], p=1).item()
                     feature_activations.append((i, activation_strength))
                 except Exception as e:
-                    print(f"[SAE] 计算特征 {i} 激活强度时出错: {e}")
+                    print(f"[SAE] Calculation characteristics{i}Error activating intensity:{e}")
                     print(f"[SAE] feature_acts shape: {feature_acts.shape}")
-                    print(f"[SAE] 尝试访问的索引: {i}")
+                    print(f"[SAE] Index attempted to access:{i}")
                     raise
             
             # Sort by activation strength
@@ -236,13 +236,13 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             top_k = min(top_k, total_features)  # Clamp top-k to feature count
             top_features = [idx for idx, _ in feature_activations[:top_k]]
             
-            print(f"[SAE] 局部稀疏性: {local_sparsity:.4f}, 直接识别出前{top_k}个最活跃特征 ({(1-local_sparsity)*100:.2f}% 的激活特征)")
+            print(f"[SAE] Local sparsity:{local_sparsity:.4f}, directly identified before{top_k}most active traits ({(1-local_sparsity)*100:.2f}% of activation characteristics)")
             
             # Tutorial-style visualization
             try:
                 from transformer_lens import HookedTransformer
                 # CPU to avoid multi-GPU conflicts
-                print("[SAE] 正在加载HookedTransformer模型到CPU以避免多GPU冲突...")
+                print("[SAE] Loading HookedTransformer model to CPU to avoid multi-GPU collisions...")
                 hooked_model = HookedTransformer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct", device="cpu")
                 
                 # Optional top-feature subset
@@ -272,7 +272,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                     )
                     top_vis_file = os.path.join(fig_dir, f"{base_name}{cycle_suffix}_top{top_k}_features.html")
                     save_feature_centric_vis(sae_vis_data=top_vis_data, filename=top_vis_file)
-                    print(f"[SAE] 已生成原始SAE Dashboard: {top_vis_file}")
+                    print(f"[SAE] Raw SAE Dashboard generated:{top_vis_file}")
                     
                     # Emit minimal HTML
                     try:
@@ -293,8 +293,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                         selected_feature_acts = feature_acts_np[:, top_features]  # [seq_len, len(top_features)]
                         
                         # Minimal HTML export
-                        simple_html = f"""
-<!DOCTYPE html>
+                        simple_html = f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -312,29 +311,29 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
         .legend-item {{ display: block; margin: 10px 0; width: 100%; }}
         .legend-color {{ display: block; width: 100%; height: 30px; border: 1px solid #999; border-radius: 5px; }}
         .token-container {{ font-family: monospace; font-size: 12px; line-height: 1.6; margin: 10px 0; }}
-        .activation-list {{ font-family: monospace; font-size: 11px; margin: 10px 0; }}
-        .feature-page {{ display: none; }}
-        .feature-page.active {{ display: block; }}
+.activation-list {{font-family: monospace; font-size: 11px; margin: 10px 0;}}
+        .feature-page {{display: none;}}
+        .feature-page.active {{display: block;}}
     </style>
     <script>
-        function showFeature(featureId) {{
-            // 隐藏所有特征页面
-            const pages = document.querySelectorAll('.feature-page');
-            pages.forEach(page => page.classList.remove('active'));
+        function showFeature (featureId) {{
+//Hide all feature pages
+            const pages = document.querySelectorAll ('.feature-page');
+            pages.forEach (page = &gt; page.classList.remove ('active'));
             
-            // 显示选中的特征页面
-            const selectedPage = document.getElementById('feature-' + featureId);
+//Show selected feature pages
+const selectedPage = document.getElementById ('feature-' + featureId);
             if (selectedPage) {{
-                selectedPage.classList.add('active');
-            }}
+                selectedPage.classList.add ('active');
+}}
             
-            // 更新页面标题
-            document.title = 'SAE Feature ' + featureId + ' Analysis';
-        }}
+            //Update page title
+            document.title = 'SAE Feature' + featureId + 'Analysis';
+}}
         
-        // 页面加载时显示第一个特征
-        window.onload = function() {{
-            const firstFeature = document.querySelector('.feature-page');
+        //Show first feature on page load
+        window.onload = function () {{
+            const firstFeature = document.querySelector ('.feature-page');
             if (firstFeature) {{
                 firstFeature.classList.add('active');
                 const featureId = firstFeature.id.replace('feature-', '');
@@ -454,10 +453,10 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                         simple_html_file = os.path.join(fig_dir, f"{base_name}{cycle_suffix}_top{top_k}_features_simple.html")
                         with open(simple_html_file, 'w', encoding='utf-8') as f:
                             f.write(simple_html)
-                        print(f"[SAE] 已生成超简化HTML: {simple_html_file}")
+                        print(f"[SAE] Generated super-simplified HTML:{simple_html_file}")
                         
                     except Exception as e:
-                        print(f"[SAE] 超简化HTML生成失败: {e}")
+                        print(f"[SAE] Hyper-Simplified HTML Generation Failed:{e}")
                     
                     del top_vis_data
                     
@@ -477,13 +476,13 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                         f.write(f"Local sparsity: {local_sparsity:.6f}\n")
                         f.write(f"Average L0: {l0.mean().item():.6f}\n")
                     
-                    print(f"[SAE] 已保存最活跃特征列表: {top_features_file}")
+                    print(f"[SAE] Most active feature list saved:{top_features_file}")
                 
                 # Free memory
                 del hooked_model
                 
             except Exception as e:
-                print(f"[SAE] SAE可视化生成失败: {e}")
+                print(f"[SAE] SAE visual generation failed:{e}")
                 import traceback
                 traceback.print_exc()
                 
@@ -496,7 +495,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
 
     ######## Image attribution ########
     elif mode == "image" and isinstance(input_data, (Image.Image, np.ndarray, torch.Tensor)):
-        print(f"[SAE] 开始图像SAE归因分析...")
+        print(f"[SAE] Starting image SAE attribution analysis...")
 
         # Process input image
         if isinstance(input_data, Image.Image):
@@ -521,15 +520,15 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             from transformer_lens import HookedTransformer
             # HookedTransformer multi-GPU capable
             if torch.cuda.device_count() > 1:
-                print(f"[SAE] 检测到 {torch.cuda.device_count()} 个GPU，HookedTransformer使用多GPU模式")
+                print(f"[SAE] Detected{torch.cuda.device_count()}GPUs, HookedTransformer uses multi-GPU mode")
                 hooked_model = HookedTransformer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct", device_map="auto")
             else:
-                print(f"[SAE] HookedTransformer使用单GPU模式")
+                print(f"[SAE] HookedTransformer uses single GPU mode")
                 hooked_model = HookedTransformer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct", device=device)
-            print(f"[SAE] 成功加载HookedTransformer: meta-llama/Meta-Llama-3-8B-Instruct")
+            print(f"[SAE] Successfully loaded HookedTransformer: meta-llama/Meta-Llama-3-8B-Instruct")
         except Exception as e:
-            print(f"[SAE] 无法加载HookedTransformer: {e}")
-            raise RuntimeError("图像SAE分析需要HookedTransformer，请安装transformer-lens")
+            print(f"[SAE] Unable to load HookedTransformer:{e}")
+            raise RuntimeError("HookedTransformer is required for image SAE analysis, please install transformer-lens")
 
         # Tokens + cfg per tutorial
         prompt = "Describe the image."
@@ -537,7 +536,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
 
         # Hook metadata per tutorial
         hook_name = sae_id  # hook_point = sae_id string
-        print(f"[SAE] 使用hook点: {hook_name}")
+        print(f"[SAE] Use hook points:{hook_name}")
 
         # Hidden states + sparsity
         target_hidden = hooked_model.run_with_cache(tokens)[1][hook_name]
@@ -547,10 +546,10 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
         # Sparsity metrics
         local_sparsity = (feature_acts == 0).float().mean().item()
         l0 = (feature_acts > 0).float().sum(-1).detach()
-        print(f"[SAE] 图像分析 - 局部稀疏性: {local_sparsity:.4f}, 平均L0: {l0.mean().item():.2f}")
+        print(f"[SAE] Image Analysis - Local Sparsity:{local_sparsity:.4f}, Mean L0:{l0.mean().item():.2f}")
         
         # Active features from existing feature_acts
-        print(f"[SAE] 基于稀疏性分析直接识别图像活跃特征...")
+        print(f"[SAE] Direct recognition of image activity characteristics based on sparsity analysis...")
         print(f"[SAE] feature_acts shape: {feature_acts.shape}")
         print(f"[SAE] feature_acts dtype: {feature_acts.dtype}")
         print(f"[SAE] feature_acts device: {feature_acts.device}")
@@ -558,7 +557,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
         # Per-feature strength (L1)
         feature_activations = []
         total_features = feature_acts.shape[-1]
-        print(f"[SAE] 总特征数: {total_features}")
+        print(f"[SAE] Total features:{total_features}")
         
         # feature_acts on correct device
         if feature_acts.device.type != device:
@@ -570,7 +569,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                 activation_strength = torch.norm(feature_acts[:, i], p=1).item()
                 feature_activations.append((i, activation_strength))
             except Exception as e:
-                print(f"[SAE] 计算特征 {i} 激活强度时出错: {e}")
+                print(f"[SAE] Calculation characteristics{i}Error activating intensity:{e}")
                 print(f"[SAE] feature_acts[:, {i}] shape: {feature_acts[:, i].shape}")
                 raise
         
@@ -583,7 +582,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
         top_k = min(top_k, total_features)  # Clamp top-k to feature count
         top_features = [idx for idx, _ in feature_activations[:top_k]]
         
-        print(f"[SAE] 局部稀疏性: {local_sparsity:.4f}, 直接识别出前{top_k}个最活跃特征 ({(1-local_sparsity)*100:.2f}% 的激活特征)")
+        print(f"[SAE] Local sparsity:{local_sparsity:.4f}, directly identified before{top_k}most active traits ({(1-local_sparsity)*100:.2f}% of activation characteristics)")
 
         # Save visualizations
         if out_prefix:
@@ -599,7 +598,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             if generate_top_features:
                 # Viz top features only
                 try:
-                    print(f"[SAE] 开始生成图像最活跃特征子集可视化...")
+                    print(f"[SAE] Starting image most active feature subset visualization...")
                     
                     # Config for top features
                     top_config = SaeVisConfig(
@@ -625,7 +624,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                     # Save top-feature figure
                     top_vis_file = os.path.join(fig_dir, f"{os.path.basename(out_prefix)}{cycle_suffix}_top_features.html")
                     save_feature_centric_vis(sae_vis_data=top_vis_data, filename=top_vis_file)
-                    print(f"[SAE] 已生成图像最活跃特征可视化: {top_vis_file}")
+                    print(f"[SAE] Most Active Feature Visualizations for Generated Images:{top_vis_file}")
                     
                     # Save top-feature list
                     top_features_file = os.path.join(fig_dir, f"{os.path.basename(out_prefix)}{cycle_suffix}_top_features.txt")
@@ -643,7 +642,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                         f.write(f"Local sparsity: {local_sparsity:.6f}\n")
                         f.write(f"Average L0: {l0.mean().item():.6f}\n")
                     
-                    print(f"[SAE] 已保存图像最活跃特征列表: {top_features_file}")
+                    print(f"[SAE] List of most active features of saved images:{top_features_file}")
                     
                     # Emit minimal HTML
                     try:
@@ -766,27 +765,27 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                         simple_html_file = os.path.join(fig_dir, f"{base_name}{cycle_suffix}_top{top_k}_features_simple.html")
                         with open(simple_html_file, 'w', encoding='utf-8') as f:
                             f.write(simple_html)
-                        print(f"[SAE] 已生成超简化HTML: {simple_html_file}")
+                        print(f"[SAE] Generated super-simplified HTML:{simple_html_file}")
                         
                     except Exception as e:
-                        print(f"[SAE] 超简化HTML生成失败: {e}")
+                        print(f"[SAE] Hyper-Simplified HTML Generation Failed:{e}")
                     
                     del top_vis_data
                     
                 except Exception as e:
-                    print(f"[SAE] 图像最活跃特征子集可视化生成失败: {e}")
+                    print(f"[SAE] Image most active feature subset visualization generation failed:{e}")
                     import traceback
                     traceback.print_exc()
             
-            print(f"[SAE] 图像特征统计信息:")
-            print(f"  - 总特征数: {total_features}")
-            print(f"  - 激活特征数: {int((1 - local_sparsity) * total_features)}")
-            print(f"  - 平均激活强度: {np.mean([score for _, score in feature_activations]):.4f}")
+            print(f"[SAE] Image Feature Statistics:")
+            print(f"- Total number of features:{total_features}")
+            print(f"- Number of active features:{int((1 - local_sparsity) * total_features)}")
+            print(f"- Average activation intensity:{np.mean([score for _, score in feature_activations]):.4f}")
 
         # Reconstruction compare (reuse tensors)
         reconstruction_error = torch.norm(target_hidden - reconstructed, dim=-1).mean().item()
         
-        print(f"[SAE] 重构误差: {reconstruction_error:.6f}")
+        print(f"[SAE] Refactoring error:{reconstruction_error:.6f}")
 
         # Save comparison figure
         if out_prefix:
@@ -815,9 +814,9 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             comparison_file = f"{out_prefix}{cycle_suffix}_reconstruction_comparison.png"
             plt.savefig(comparison_file, dpi=150, bbox_inches='tight')
             plt.close()
-            print(f"[SAE] 已保存重构对比图: {comparison_file}")
+            print(f"[SAE] Refactoring Comparison Chart Saved:{comparison_file}")
 
         return reconstruction_error, img_array, reconstructed.detach().cpu().numpy()
         
     else:
-        raise ValueError(f"input_data类型不支持: {type(input_data)}")
+        raise ValueError(f"the input_data type does not support:{type(input_data)}")

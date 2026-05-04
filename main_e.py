@@ -25,7 +25,7 @@ def main():
     parser.add_argument("--n_cycles", type=int, default=100)
     parser.add_argument("--mode", type=str, default="direct", choices=['direct', 'explain'])
     parser.add_argument("--max_new_tokens", type=int, default=1024)
-    parser.add_argument("--attribution_method", type=str, default="integrated_gradients", choices=["integrated_gradients", "attention_rollout", "rise_saliency", "sae", "none"], help="归因方法名")
+    parser.add_argument("--attribution_method", type=str, default="integrated_gradients", choices=["integrated_gradients", "attention_rollout", "rise_saliency", "sae", "none"], help="Attribution method name")
     parser.add_argument("--role", type=str, default="none")
     parser.add_argument("--cot", type=int, default=0)
     args = parser.parse_args()

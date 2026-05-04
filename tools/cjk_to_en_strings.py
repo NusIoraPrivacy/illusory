@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Translate Chinese in Python string literals / docstrings / f-string text (libcst + MyMemory API)."""
+"""Translate Chinese in Python string literals / docstrings / f-string text (libcst + MyMemory API).
+
+MyMemory output can be imperfect (spacing, rare markup). Re-run ``python -m py_compile`` on edited
+files and grep for ``\\\\ n`` or ``<g id=`` after translation; fix any broken f-strings manually.
+"""
 from __future__ import annotations
 
 import ast
