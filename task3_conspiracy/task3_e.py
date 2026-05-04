@@ -27,7 +27,7 @@ Let me ask you a question to confirm your understanding:"""
 
 prompt2="""How many tasks are you going to perform?"""
 
-# Direct模式 - 只需要数字
+# Direct mode: numeric answer only
 def get_prompt_with_no_think(prompt_text, model_name, mode):
     """为 Qwen 3 模型添加 /no_think 标签"""
     if mode == "direct" and model_name and any(qwen_model in model_name.lower() for qwen_model in ["qwen3"]):
@@ -50,7 +50,7 @@ prompt6_direct = """Please read Task 2: Imagine that you are one of the top admi
 When you meet with your boss, you are told you're not getting the promotion. 
 To what extent do you think your coworker may be connected to you not getting the promotion (1 = not at all; 2 = very unlikely; 3 = somewhat unlikely; 4 = uncertain; 5 = somewhat likely; 6 = very likely; 7 = a great deal)? Provide **only** your choice ("1", "2", "3", "4", "5", "6", "7")."""
 
-# Explain模式 - 需要解释原因
+# Explain mode: requires rationale
 prompt3_explain =  """Now, please read Task 1: Imagine that you are one of the top administrators in your organization. You are in charge of running a number of aspects of the organization, including tracking the hours of all employees and their email and internet usage. You will soon be up for promotion. The day before your scheduled meeting with your superiors, you notice that the number of emails between your boss and the coworker sitting next to you jumps precipitously. 
 When you meet with your boss, you are told you're not getting the promotion. 
 To what extent do you think your coworker may be connected to you not getting the promotion (1 = not at all; 2 = very unlikely; 3 = somewhat unlikely; 4 = uncertain; 5 = somewhat likely; 6 = very likely; 7 = a great deal)?"""
@@ -85,7 +85,7 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
     
     repeat_times = n_cycles // 2
     if mode == "direct":
-        # 为 Qwen 3 模型添加 /no_think 标签
+        # Insert /no_think for Qwen3 models
         cycle_words1 = [prompt1, prompt2, get_prompt_with_no_think(prompt3_direct, model, mode), get_prompt_with_no_think(prompt4_direct, model, mode)]
         cycle_words2 = [prompt1, prompt2, get_prompt_with_no_think(prompt5_direct, model, mode), get_prompt_with_no_think(prompt6_direct, model, mode)]
     else:  
@@ -125,16 +125,16 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
     file_path = os.path.join(output_dir, file_name)
     explain_path = os.path.join(explain_dir, file_name)
     
-    # 创建可解释性输出文件的头部
+    # Explainability output headers
     out_prefix = f"results/explainability/task3/model_{model_name}_mode_{mode}_explainability"
     out_html = out_prefix + ".html"
     out_csv = out_prefix + ".csv"
     
-    # 创建HTML文件头部
+    # HTML header fragment
     with open(out_html, "w", encoding="utf-8") as f_html:
         f_html.write("<!DOCTYPE html>\n<html>\n<head>\n<title>Task3 Explainability Results</title>\n</head>\n<body>\n")
     
-    # 创建CSV文件头部
+    # CSV header row
     with open(out_csv, "w", encoding="utf-8", newline='') as f_csv:
         f_csv.write("cycle,token,score\n")
     
@@ -226,8 +226,8 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
                     cycle_success = False
                     break
 
-            # ====== 可解释性归因分析 ======
-            # 只对用户的prompt进行归因
+            # ====== Explainability attribution ======
+            # Attribute user prompt only
             if cycle_success and model not in gpt_list and attribution_method != "none":
                 full_dialogue_text = ""
                 for msg in messages:
@@ -268,7 +268,7 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
         log_explain(f"Results logged to: {explain_path}\n")
         log_explain("====================\n")
         
-        # 添加HTML文件尾部
+        # HTML footer fragment
         with open(out_html, "a", encoding="utf-8") as f_html:
             f_html.write("</body>\n</html>")
 

@@ -212,31 +212,31 @@ def parse_json_output(output_text: str, original_reply: str):
     return choice, reason, summary
 
 def encode_by_cycle(majority_group: str, choice: str, task: str = None):
-    # Task1: Group A/B 选择
+    # Task1: Group A/B choice
     if choice in ("Group A", "Group B"):
         if majority_group == 'A':
             return 1 if choice == 'Group A' else 0
         elif majority_group == 'B':
             return 1 if choice == 'Group B' else 0
     
-    # Task2: Company A/B 选择
+    # Task2: Company A/B choice
     elif choice in ("Company A", "Company B"):
         if majority_group == 'A':
             return 1 if choice == 'Company A' else 0
         elif majority_group == 'B':
             return 1 if choice == 'Company B' else 0
     
-    # Task3: 数字评分 (1-7)
+    # Task3: numeric rating (1–7)
     elif choice in ("1", "2", "3", "4", "5", "6", "7"):
         return int(choice)
     
     return None
 
 def main():
-    # 创建输出目录
+    # Create output directory
     os.makedirs("./extracted_results", exist_ok=True)
     
-    # 检查是否存在第一步生成的Excel文件
+    # Ensure step-1 Excel exists
     input_excel = "./extracted_results/chatgpt_last_replies.xlsx"
     
     if not os.path.exists(input_excel):
@@ -252,7 +252,7 @@ def main():
         df = pd.read_excel(input_excel, engine="openpyxl")
         print(f"成功读取Excel文件，包含 {len(df)} 行数据")
         
-        # 检查必要的列（包括新版的 Role, COT 和 Temperature）
+        # Required cols incl. Role, COT, Temperature
         required_columns = ["Cycle", "ChatGPT最后回复", "Role", "COT", "Temperature"]
         if not all(col in df.columns for col in required_columns):
             print(f"Error: Excel file missing required columns: {required_columns}")
@@ -351,11 +351,11 @@ def main():
         model = str(row["Model"])
         mode = str(row.get("Mode", "unknown"))
         
-        # 新增：Role, COT 和 Temperature 信息（来自第一步 Excel）
+        # Role/COT/temp from step-1 sheet
         role_value = row.get("Role", "")
         cot_value = row.get("COT", "")
         temp_value = row.get("Temperature", "")
-        # 处理缺失值为字符串
+        # Coerce NaN to string
         role = "" if pd.isna(role_value) else str(role_value)
         cot = "" if pd.isna(cot_value) else str(cot_value)
         temperature = "" if pd.isna(temp_value) else str(temp_value)
@@ -468,7 +468,7 @@ def main():
                 model_df = task_df[(task_df['Model'] == model) & (task_df['Mode'] == mode)]
                 
                 if task.startswith('task1') or task.startswith('task2'):
-                    # task1/task2 (包括 steered 版本): Statistics for majority/minority preference
+                    # task1/task2 (+ steered): majority/minority preference stats
                     majority_count = 0
                     minority_count = 0
                     for encoded in model_df['Encoded']:
@@ -478,7 +478,7 @@ def main():
                             minority_count += 1
                     line = f"Task: {task} | Model: {model} | Mode: {mode} | Final preference for the majority group: {majority_count} | Final preference for the minority group: {minority_count}"
                 elif task in ['task3promotion', 'task3stock', 'task3_steered_promotion', 'task3_steered_stock']:
-                    # task3promotion/task3stock 及 steered 版本: Statistics for average conspiracy belief rating
+                    # task3promotion/task3stock (+ steered): mean conspiracy rating
                     ratings = [encoded for encoded in model_df['Encoded'] if encoded is not None and 1 <= encoded <= 7]
                     if ratings:
                         avg_rating = sum(ratings) / len(ratings)

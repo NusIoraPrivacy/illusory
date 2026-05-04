@@ -3,7 +3,7 @@ import torch
 import re
 
 def extract_assistant_reply(text):
-    # 匹配最后一个assistant role后的内容
+    # Slice after last assistant role marker
     match = re.search(r"assistant\\n(.+)", text, re.DOTALL)
     if match:
         return match.group(1).strip()
@@ -35,7 +35,7 @@ def get_vl_text_generator(model_path, model_name=None, return_model=False, **kwa
                 return_dict=True,
                 return_tensors="pt",
             ).to(model.device)
-            # print("[主流程] pixel_values.shape:", inputs.get('pixel_values', None).shape if 'pixel_values' in inputs else None)
+            # print("[main] pixel_values.shape:", ... )
 
             input_len = inputs["input_ids"].shape[1]
             with torch.no_grad():
@@ -52,26 +52,26 @@ def get_vl_text_generator(model_path, model_name=None, return_model=False, **kwa
         else:
             return generate
     elif "gemma-3-27b-it" in name or "gemma-3-27b-it" in name.lower():
-        # gemma-3-27b-it 是一个多模态模型，支持图像处理
+        # gemma-3-27b-it is multimodal (vision)
         try:
             from transformers import AutoProcessor, AutoModelForCausalLM
             import torch._dynamo as dynamo
             
-            # 禁用torch编译优化以避免backend='inductor'错误
+            # Disable torch.compile to avoid inductor errors
             dynamo.config.suppress_errors = True
             torch._dynamo.config.disable = True
             
             model = AutoModelForCausalLM.from_pretrained(
                 model_path,
                 device_map="auto",
-                torch_dtype=torch.bfloat16,  # gemma-3-27b-it 推荐使用 bfloat16
+                torch_dtype=torch.bfloat16,  # Prefer bfloat16 for gemma-3-27b-it
                 trust_remote_code=True,
             )
             processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
             
             def generate(messages, **gen_kwargs):
                 try:
-                    # 确保torch编译被禁用
+                    # Ensure compile stays off
                     torch._dynamo.config.disable = True
                     
                     inputs = processor.apply_chat_template(
@@ -85,9 +85,9 @@ def get_vl_text_generator(model_path, model_name=None, return_model=False, **kwa
                         inputs["pixel_values"] = inputs["pixel_values"].to(torch.bfloat16)
                     input_len = inputs["input_ids"].shape[1]
                     
-                    # 使用最简单的生成参数，避免所有可能导致错误的参数
+                    # Minimal generation kwargs
                     with torch.inference_mode():
-                        # 临时禁用torch编译
+                        # Temporarily disable compile
                         original_compile = torch._dynamo.config.disable
                         torch._dynamo.config.disable = True
                         
@@ -99,7 +99,7 @@ def get_vl_text_generator(model_path, model_name=None, return_model=False, **kwa
                                 use_cache=True,
                             )
                         finally:
-                            # 恢复原始设置
+                            # Restore prior settings
                             torch._dynamo.config.disable = original_compile
                             
                     return processor.batch_decode(outputs[:, input_len:])[0].strip()

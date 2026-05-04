@@ -13,9 +13,9 @@ def get_sae_config_for_model(model_name, model_path=None):
     """
     model_name_lower = model_name.lower()
     
-    # SAE配置映射
+    # SAE config registry
     sae_configs = {
-        # Llama-3-8B-Instruct 配置
+        # Llama-3-8B-Instruct config
         'llama-3.0-8b-instruct': {
             'release': 'llama-3-8b-it-res-jh',
             'sae_id': 'blocks.25.hook_resid_post',
@@ -29,37 +29,37 @@ def get_sae_config_for_model(model_name, model_path=None):
             'hook_name': 'blocks.25.hook_resid_post'
         },
         'llama-3.2-1b-instruct': {
-            'release': 'llama-3-8b-it-res-jh',  # 使用Llama-3-8B的SAE作为近似
+            'release': 'llama-3-8b-it-res-jh',  # Approximate with Llama-3-8B SAE
             'sae_id': 'blocks.25.hook_resid_post',
             'target_layer': 25,
             'hook_name': 'blocks.25.hook_resid_post'
         },
         'llama-3.2-3b-instruct': {
-            'release': 'llama-3-8b-it-res-jh',  # 使用Llama-3-8B的SAE作为近似
+            'release': 'llama-3-8b-it-res-jh',  # Approximate with Llama-3-8B SAE
             'sae_id': 'blocks.25.hook_resid_post',
             'target_layer': 25,
             'hook_name': 'blocks.25.hook_resid_post'
         },
         'llama-3.2-11b-vision-instruct': {
-            'release': 'llama-3-8b-it-res-jh',  # 使用Llama-3-8B的SAE作为近似
+            'release': 'llama-3-8b-it-res-jh',  # Approximate with Llama-3-8B SAE
             'sae_id': 'blocks.25.hook_resid_post',
             'target_layer': 25,
             'hook_name': 'blocks.25.hook_resid_post'
         },
         'llama-3.3-70b-instruct': {
-            'release': 'llama-3-8b-it-res-jh',  # 使用Llama-3-8B的SAE作为近似
+            'release': 'llama-3-8b-it-res-jh',  # Approximate with Llama-3-8B SAE
             'sae_id': 'blocks.25.hook_resid_post',
             'target_layer': 25,
             'hook_name': 'blocks.25.hook_resid_post'
         },
         'llama-4-scout-17b-16e-instruct': {
-            'release': 'llama-3-8b-it-res-jh',  # 使用Llama-3-8B的SAE作为近似
+            'release': 'llama-3-8b-it-res-jh',  # Approximate with Llama-3-8B SAE
             'sae_id': 'blocks.25.hook_resid_post',
             'target_layer': 25,
             'hook_name': 'blocks.25.hook_resid_post'
         },
         
-        # Gemma-2-9B-IT 配置 - Layer 9
+        # Gemma-2-9B-IT — layer 9
         'gemma-2-9b-it-layer9-131k-l0-121': {
             'release': 'gemma-scope-9b-it-res',
             'sae_id': 'layer_9/width_131k/average_l0_121',
@@ -121,7 +121,7 @@ def get_sae_config_for_model(model_name, model_path=None):
             'hook_name': 'blocks.9.hook_resid_post'
         },
         
-        # Gemma-2-9B-IT 配置 - Layer 20
+        # Gemma-2-9B-IT — layer 20
         'gemma-2-9b-it-layer20-131k-l0-13': {
             'release': 'gemma-scope-9b-it-res',
             'sae_id': 'layer_20/width_131k/average_l0_13',
@@ -153,7 +153,7 @@ def get_sae_config_for_model(model_name, model_path=None):
             'hook_name': 'blocks.20.hook_resid_post'
         },
         
-        # Gemma-2-9B-IT Layer 20 width_16k 配置
+        # Gemma-2-9B-IT layer20 width 16k
         'gemma-2-9b-it-layer20-16k-l0-14': {
             'release': 'gemma-scope-9b-it-res',
             'sae_id': 'layer_20/width_16k/average_l0_14',
@@ -185,7 +185,7 @@ def get_sae_config_for_model(model_name, model_path=None):
             'hook_name': 'blocks.20.hook_resid_post'
         },
 
-        # Gemma-2-9B-IT 配置 - Layer 31
+        # Gemma-2-9B-IT — layer 31
         'gemma-2-9b-it-layer31-131k-l0-109': {
             'release': 'gemma-scope-9b-it-res',
             'sae_id': 'layer_31/width_131k/average_l0_109',
@@ -217,7 +217,7 @@ def get_sae_config_for_model(model_name, model_path=None):
             'hook_name': 'blocks.31.hook_resid_post'
         },
         
-        # Gemma-2-9B-IT Layer 31 width_16k 配置
+        # Gemma-2-9B-IT layer31 width 16k
         'gemma-2-9b-it-layer31-16k-l0-14': {
             'release': 'gemma-scope-9b-it-res',
             'sae_id': 'layer_31/width_16k/average_l0_14',
@@ -249,7 +249,7 @@ def get_sae_config_for_model(model_name, model_path=None):
             'hook_name': 'blocks.31.hook_resid_post'
         },
         
-        # Gemma-2-9B-IT 默认配置（使用layer 9, width 131k, l0_13）
+        # Gemma-2-9B-IT default (layer9 width131k l0_13)
         'gemma-2-9b-it': {
             'release': 'gemma-scope-9b-it-res',
             'sae_id': 'layer_31/width_16k/average_l0_14',
@@ -257,10 +257,10 @@ def get_sae_config_for_model(model_name, model_path=None):
             'hook_name': 'blocks.31.hook_resid_post'
         },
         
-        # Qwen2.5-7B-Instruct 配置
-        # 注意：Qwen 架构与 Llama 不同，目前没有公开的 Qwen 专用 SAE
-        # 因此使用 Llama-3-8B 的 SAE 作为近似（可能不完全兼容，仅作参考）
-        # 如果将来有 Qwen 专用的 SAE（如 qwen-scope-7b-instruct-res），可以在这里更新
+        # Qwen2.5-7B-Instruct config
+        # Note: Qwen ≠ Llama; no public Qwen SAE
+        # Fallback Llama-3-8B SAE (approximate)
+        # Update here when Qwen SAE releases
         'qwen2.5-7b-instruct': {
             'release': 'llama-3-8b-it-res-jh',
             'sae_id': 'blocks.25.hook_resid_post',
@@ -268,9 +268,9 @@ def get_sae_config_for_model(model_name, model_path=None):
             'hook_name': 'blocks.25.hook_resid_post'
         },
         
-        # DeepSeek-R1-Distill-Llama-8B 配置
-        # 使用 llama_scope_r1_distill release，Layer 15
-        # 注意：模型名称可能有多种变体（deepseek-r1-distill-llama-8b, deepseek-r1-llama-8b）
+        # DeepSeek-R1-Distill-Llama-8B config
+        # llama_scope_r1_distill release, layer 15
+        # Model name variants supported
         'deepseek-r1-distill-llama-8b': {
             'release': 'llama-3-8b-it-res-jh',
             'sae_id': 'blocks.25.hook_resid_post',
@@ -279,20 +279,20 @@ def get_sae_config_for_model(model_name, model_path=None):
         },
     }
     
-    # 尝试精确匹配
+    # Exact match
     if model_name_lower in sae_configs:
         config = sae_configs[model_name_lower].copy()
         print(f"[SAE] 找到精确匹配的SAE配置: {model_name} -> {config['release']}")
         return config
     
-    # 尝试模糊匹配
+    # Fuzzy match
     for key, config in sae_configs.items():
         if key in model_name_lower or model_name_lower in key:
             config = config.copy()
             print(f"[SAE] 找到模糊匹配的SAE配置: {model_name} -> {config['release']}")
             return config
     
-    # 默认使用Llama-3-8B的配置
+    # Default Llama-3-8B config
     default_config = sae_configs['llama-3.1-8b-instruct'].copy()
     print(f"[SAE] 未找到匹配的SAE配置，使用默认配置: {model_name} -> {default_config['release']}")
     return default_config
@@ -322,7 +322,7 @@ def load_gemma_sae_from_local(npz_file_path, device="cpu"):
         import numpy as np
         import torch
         
-        # 尝试多种导入方式
+        # Try multiple import paths
         try:
             from sae_lens.saes.standard_sae import StandardSAE, StandardSAEConfig
         except ImportError:
@@ -330,32 +330,32 @@ def load_gemma_sae_from_local(npz_file_path, device="cpu"):
                 from sae_lens.standard_sae import StandardSAE, StandardSAEConfig
             except ImportError:
                 try:
-                    # 尝试从sae_lens直接导入
+                    # Import from sae_lens
                     from sae_lens import SAE as StandardSAE, SAEConfig as StandardSAEConfig
                 except ImportError:
-                    # 最后尝试导入基础类
+                    # Fallback base class import
                     from sae_lens import SAE, SAEConfig
                     StandardSAE = SAE
                     StandardSAEConfig = SAEConfig
         
         print(f"[SAE] 从本地加载Gemma SAE: {npz_file_path}")
         
-        # 加载npz文件
+        # Load npz weights
         data = np.load(npz_file_path, allow_pickle=True)
         print(f"[SAE] 成功加载npz文件，包含: {list(data.keys())}")
         
-        # 提取SAE参数
+        # Extract SAE tensors
         W_enc = torch.tensor(data['W_enc'], dtype=torch.float32, device=device)
         W_dec = torch.tensor(data['W_dec'], dtype=torch.float32, device=device)
         b_enc = torch.tensor(data['b_enc'], dtype=torch.float32, device=device)
         b_dec = torch.tensor(data['b_dec'], dtype=torch.float32, device=device)
-        # threshold = torch.tensor(data['threshold'], dtype=torch.float32, device=device)  # StandardSAE没有threshold属性
+        # threshold = torch.tensor(...)  # StandardSAE has no threshold field
         
         print(f"[SAE] SAE参数维度: d_in={W_enc.shape[0]}, d_sae={W_enc.shape[1]}, d_out={W_dec.shape[0]}")
         
-        # 创建SAE配置 - 根据环境使用不同的参数
+        # Build SAEConfig env-specific
         try:
-            # 尝试使用StandardSAEConfig（较新版本）
+            # Try StandardSAEConfig (newer)
             cfg = StandardSAEConfig(
                 d_in=W_enc.shape[0],  # 3584
                 d_sae=W_enc.shape[1],  # 131072
@@ -366,7 +366,7 @@ def load_gemma_sae_from_local(npz_file_path, device="cpu"):
                 reshape_activations='none'
             )
         except TypeError:
-            # 如果StandardSAEConfig失败，使用基础SAEConfig（需要更多参数）
+            # Else legacy SAEConfig
             cfg = StandardSAEConfig(
                 architecture='standard',
                 d_in=W_enc.shape[0],  # 3584
@@ -388,17 +388,17 @@ def load_gemma_sae_from_local(npz_file_path, device="cpu"):
                 sae_lens_training_version=None
             )
         
-        # 创建SAE对象
+        # Instantiate SAE
         sae = StandardSAE(cfg)
         
-        # 手动设置权重
+        # Assign weights manually
         sae.W_enc.data = W_enc
         sae.W_dec.data = W_dec
         sae.b_enc.data = b_enc
         sae.b_dec.data = b_dec
-        # sae.threshold.data = threshold  # StandardSAE没有threshold属性
+        # sae.threshold.data = threshold  # StandardSAE lacks threshold
         
-        # 创建配置字典 - 根据环境使用不同的属性
+        # Config dict per environment
         cfg_dict = {
             'd_in': cfg.d_in,
             'd_sae': cfg.d_sae,
@@ -408,13 +408,13 @@ def load_gemma_sae_from_local(npz_file_path, device="cpu"):
             'normalize_activations': cfg.normalize_activations
         }
         
-        # 尝试添加reshape_activations属性（如果存在）
+        # Optional reshape_activations
         if hasattr(cfg, 'reshape_activations'):
             cfg_dict['reshape_activations'] = cfg.reshape_activations
         else:
-            cfg_dict['reshape_activations'] = 'none'  # 默认值
+            cfg_dict['reshape_activations'] = 'none'  # Default value
         
-        # 返回与SAE.from_pretrained()相同的格式
+        # Match SAE.from_pretrained() return shape
         sae_result = (sae, cfg_dict, None)  # (sae, cfg_dict, feature_sparsity)
         
         print(f"[SAE] ✅ 成功从本地npz文件创建SAE对象")
@@ -435,7 +435,7 @@ def generate_simple_html_visualization(token_texts, selected_feature_acts, top_f
     try:
         print(f"[SAE] 开始生成超简化HTML，特征数量: {len(top_features)}")
         
-        # 生成超简化HTML
+        # Minimal HTML export
         simple_html = f"""
 <!DOCTYPE html>
 <html>
@@ -567,7 +567,7 @@ def generate_simple_html_visualization(token_texts, selected_feature_acts, top_f
         
         print(f"[SAE] HTML头部生成完成，开始生成特征页面...")
         
-        # 为每个特征生成可视化
+        # Viz each feature
         for feat_idx, feature_id in enumerate(top_features):
             print(f"[SAE] 正在生成特征 {feature_id} (进度: {feat_idx+1}/{len(top_features)})")
             feature_acts = selected_feature_acts[:, feat_idx]
@@ -588,7 +588,7 @@ def generate_simple_html_visualization(token_texts, selected_feature_acts, top_f
             <div class="activation-list">
 """
             
-            # 先添加最活跃的token列表
+            # Top tokens section first
             top_indices = feature_acts.argsort()[-10:][::-1]
             for i, idx in enumerate(top_indices):
                 activation = feature_acts[idx]
@@ -602,9 +602,9 @@ def generate_simple_html_visualization(token_texts, selected_feature_acts, top_f
             <div class="token-container">
 """
             
-            # 添加每个token的激活信息
+            # Append per-token activations
             for i, (token, activation) in enumerate(zip(token_texts, feature_acts)):
-                # 计算颜色强度
+                # Compute color intensity
                 max_act = feature_acts.max()
                 if max_act > 0:
                     color_intensity = min(1.0, activation / max_act)
@@ -654,7 +654,7 @@ def generate_simple_html_visualization(token_texts, selected_feature_acts, top_f
 """
             print(f"[SAE] 特征 {feature_id} 生成完成")
         
-        # 添加页面结束标签
+        # Close HTML tags
         simple_html += """
 </body>
 </html>
@@ -662,7 +662,7 @@ def generate_simple_html_visualization(token_texts, selected_feature_acts, top_f
         
         print(f"[SAE] HTML生成完成，开始保存文件...")
         
-        # 保存超简化HTML
+        # Persist minimal HTML
         simple_html_file = os.path.join(fig_dir, f"{base_name}{cycle_suffix}_top{top_k}_features_simple.html")
         with open(simple_html_file, 'w', encoding='utf-8') as f:
             f.write(simple_html)
@@ -698,35 +698,35 @@ def load_sae_model(sae_release, sae_id, sae_device="cuda:0"):
         cfg_dict = {'d_in': 768}
         feature_sparsity = None
         
-        # 方法1：尝试从SAE专用目录加载
+        # Method 1: local SAE mirror
         sae_base_dir = "/workspace/illusory/huggingface/SAEs"
         
-        # 处理HuggingFace仓库名称与本地目录名称的差异
-        # HuggingFace: llama-3-8b-it-res-jh -> 本地: llama-3-8b-it-res
+        # HF repo name vs local folder
+        # HF llama-3-8b-it-res-jh → local llama-3-8b-it-res
         local_release = sae_release
         if sae_release == "llama-3-8b-it-res-jh":
             local_release = "llama-3-8b-it-res"
         elif sae_release == "llama_scope_r1_distill":
-            # llama_scope_r1_distill 对应的本地目录可能是 Llama-Scope-R1-Distill 或类似名称
-            local_release = "llama-scope-r1-distill"  # 尝试常见的本地目录名称
+            # llama_scope_r1_distill → Llama-Scope-R1-Distill locally
+            local_release = "llama-scope-r1-distill"  # Try common local folder names
         elif sae_release in ["llama_scope_lxr_8x", "llama_scope_lxr_32x", "llama_scope_lxa_8x", "llama_scope_lxa_32x", "llama_scope_lxm_8x", "llama_scope_lxm_32x"]:
-            # Llama Scope 系列可能使用不同的本地目录名称
-            local_release = sae_release.replace("_", "-")  # 尝试将下划线替换为连字符
+            # Llama Scope dirs vary
+            local_release = sae_release.replace("_", "-")  # Replace underscores with hyphens
         
         local_sae_path = os.path.join(sae_base_dir, local_release)
         sae_config_path = os.path.join(local_sae_path, sae_id)
         
-        # 检查不同格式的SAE文件
+        # Probe SAE file layouts
         sae_files_exist = False
         if os.path.exists(sae_config_path):
-            # 检查Llama格式 (cfg.json + safetensors)
+            # Llama layout: cfg.json + safetensors
             cfg_file = os.path.join(sae_config_path, "cfg.json")
             safetensors_file = os.path.join(sae_config_path, "sae_weights.safetensors")
             if os.path.exists(cfg_file) and os.path.exists(safetensors_file):
                 sae_files_exist = True
                 print(f"[SAE] 找到Llama格式SAE文件: cfg.json + sae_weights.safetensors")
             else:
-                # 检查Gemma格式 (params.npz)
+                # Gemma layout: params.npz
                 npz_file = os.path.join(sae_config_path, "params.npz")
                 if os.path.exists(npz_file):
                     sae_files_exist = True
@@ -736,13 +736,13 @@ def load_sae_model(sae_release, sae_id, sae_device="cuda:0"):
             try:
                 print(f"[SAE] 尝试从本地路径加载SAE模型: {sae_config_path}")
                 
-                # 根据文件格式选择加载方法
+                # Loader per format
                 if os.path.exists(os.path.join(sae_config_path, "cfg.json")):
-                    # Llama格式：使用load_from_disk方法
+                    # Llama: load_from_disk
                     print(f"[SAE] 使用Llama格式加载方法")
                     sae_result = SAE.load_from_disk(sae_config_path, device=sae_device)
                 else:
-                    # Gemma格式：使用专门的加载函数
+                    # Gemma: custom npz loader
                     print(f"[SAE] 使用Gemma格式加载方法")
                     npz_file = os.path.join(sae_config_path, "params.npz")
                     if os.path.exists(npz_file):
@@ -772,7 +772,7 @@ def load_sae_model(sae_release, sae_id, sae_device="cuda:0"):
                 print(f"[SAE] 本地路径加载失败: {str(e)}")
                 sae = None
         
-        # 方法2：如果SAE专用目录没有，尝试从标准HuggingFace缓存加载
+        # Method 2: HF cache
         if sae is None:
             standard_cache_path = f"/root/.cache/huggingface/hub/models--{sae_release.replace('/', '--')}"
             if os.path.exists(standard_cache_path):
@@ -806,7 +806,7 @@ def load_sae_model(sae_release, sae_id, sae_device="cuda:0"):
                     print(f"[SAE] 标准缓存加载失败: {str(e)}")
                     sae = None
         
-        # 方法3：如果本地都没有，尝试从HuggingFace下载
+        # Method 3: HF download
         if sae is None:
             try:
                 print(f"[SAE] 尝试从HuggingFace下载SAE模型: {sae_release}/{sae_id}")
@@ -875,47 +875,47 @@ def load_hooked_transformer_for_sae(model_name, hooked_device="cuda:0"):
         
         hooked_model = None
         
-        # 方法1：尝试使用本地下载的HookedTransformer模型
+        # HookedTransformer: local snapshot
         try:
             print(f"[SAE] 尝试使用本地下载的HookedTransformer模型...")
             
-            # 根据模型类型选择本地HookedTransformer路径
+            # Local path per model family
             sae_base_dir = "/workspace/illusory/huggingface/SAEs"
             if 'gemma' in model_name.lower():
-                # 使用IT版本的HookedTransformer，与IT版本的SAE保持一致
+                # IT HookedTransformer ↔ IT SAE
                 hooked_model_path = os.path.join(sae_base_dir, "gemma-scope-9b-it-res", "hooked-transformer-it")
-                model_name_for_hf = "google/gemma-2-9b-it"  # IT版本
+                model_name_for_hf = "google/gemma-2-9b-it"  # Instruct checkpoint
                 print(f"[SAE] 检测到Gemma模型，使用IT版本的HookedTransformer: {hooked_model_path}")
                 print(f"[SAE] 使用IT版本HookedTransformer，与IT版本SAE保持一致")
             else:
                 hooked_model_path = os.path.join(sae_base_dir, "llama-3-8b-it-res", "hooked-transformer")
-                model_name_for_hf = "meta-llama/Meta-Llama-3-8B-Instruct"  # 对应的HuggingFace模型名称
+                model_name_for_hf = "meta-llama/Meta-Llama-3-8B-Instruct"  # Matching HF model id
                 print(f"[SAE] 使用本地Llama HookedTransformer: {hooked_model_path}")
             
-            # 检查本地路径是否存在
+            # Verify local path
             print(f"[SAE] 检查本地路径: {hooked_model_path}")
             print(f"[SAE] 路径存在: {os.path.exists(hooked_model_path)}")
             
             if os.path.exists(hooked_model_path):
                 print(f"[SAE] 本地HookedTransformer路径存在，尝试加载...")
                 
-                # 先加载HuggingFace模型，然后转换为HookedTransformer
+                # HF causal LM → HookedTransformer
                 from transformers import AutoModelForCausalLM, AutoTokenizer
                 
                 print(f"[SAE] 从本地路径加载HuggingFace模型: {hooked_model_path}")
                 try:
-                    # 简化策略：直接使用CPU加载HuggingFace模型，然后让HookedTransformer处理设备转换
+                    # Load HF weights on CPU first
                     print(f"[SAE] 使用CPU加载HuggingFace模型以避免内存冲突")
                     
                     hf_model = AutoModelForCausalLM.from_pretrained(
                         hooked_model_path,
-                        device_map=None,  # 使用CPU
+                        device_map=None,  # Use CPU
                         torch_dtype="auto",
                         low_cpu_mem_usage=True
                     )
                     print(f"[SAE] HuggingFace模型加载成功")
                     
-                    # 使用hf_model参数创建HookedTransformer
+                    # HookedTransformer.from_pretrained(..., hf_model=)
                     print(f"[SAE] 开始创建HookedTransformer...")
                     hooked_model = HookedTransformer.from_pretrained(
                         model_name_for_hf,
@@ -940,14 +940,14 @@ def load_hooked_transformer_for_sae(model_name, hooked_device="cuda:0"):
             print(f"[SAE] 本地HookedTransformer创建失败: {e}")
             hooked_model = None
         
-        # 方法2：如果本地HookedTransformer失败，尝试从HuggingFace下载
+        # Fallback HF HookedTransformer
         if hooked_model is None:
             try:
                 print(f"[SAE] 尝试从HuggingFace下载HookedTransformer...")
                 
-                # 根据模型类型选择HookedTransformer模型名称
+                # HookedTransformer id per family
                 if 'gemma' in model_name.lower():
-                    hooked_model_name = "google/gemma-2-9b"  # 使用Base版本，与SAE训练模型一致
+                    hooked_model_name = "google/gemma-2-9b"  # Base weights align with SAE training
                     print(f"[SAE] 检测到Gemma模型，使用HookedTransformer: {hooked_model_name}")
                 else:
                     hooked_model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
@@ -963,7 +963,7 @@ def load_hooked_transformer_for_sae(model_name, hooked_device="cuda:0"):
                 hooked_model = None
         
         
-        # 如果所有方法都失败，打印详细信息
+        # Verbose errors if all loaders fail
         if hooked_model is None:
             print(f"[SAE] ⚠️ 所有HookedTransformer创建方法都失败")
             print(f"[SAE] 模型名称: {model_name}")

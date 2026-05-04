@@ -111,7 +111,7 @@ def get_shuffled_statements(statements_group):
     return '\n'.join(random.sample(source_list, len(source_list)))
     # return '\n'.join(source_list)
 
-# 评估者决策指南
+# Evaluator decision rubric
 prompt_decision_guidelines = (
     "CRITICAL: Choose based ONLY on the PROPORTION of positive statements, NOT the total number.\n\n"
     "Process:\n"
@@ -137,7 +137,7 @@ def get_combined_dialogue(statements_group, mode="direct", model_name=""):
     assert statements_group in ['A', 'B']
     footer = prompt_footer_direct if mode == "direct" else prompt_footer_explain
     
-    # 为 Qwen 3 模型添加 /no_think 标签
+    # Insert /no_think for Qwen3 models
     if mode == "direct" and model_name and any(qwen_model in model_name.lower() for qwen_model in ["qwen3"]):
         footer += " /no_think"
     
@@ -193,16 +193,16 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
     file_path = os.path.join(output_dir, file_name)
     explain_path = os.path.join(explain_dir, file_name)
     
-    # 创建可解释性输出文件的头部
+    # Explainability output headers
     out_prefix = f"results/explainability/task2/model_{model_name}_mode_{mode}_explainability"
     out_html = out_prefix + ".html"
     out_csv = out_prefix + ".csv"
     
-    # 创建HTML文件头部
+    # HTML header fragment
     with open(out_html, "w", encoding="utf-8") as f_html:
         f_html.write("<!DOCTYPE html>\n<html>\n<head>\n<title>Task2 Explainability Results</title>\n</head>\n<body>\n")
     
-    # 创建CSV文件头部
+    # CSV header row
     with open(out_csv, "w", encoding="utf-8", newline='') as f_csv:
         f_csv.write("cycle,token,score\n")
     
@@ -271,8 +271,8 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
                     cycle_success = False
                     break
             
-            # ====== 可解释性归因分析 ======
-            # 只对用户的prompt进行归因
+            # ====== Explainability attribution ======
+            # Attribute user prompt only
             if cycle_success and model not in ["gpt-4-turbo", "gpt-4o", "GPT-3.5", "GPT-4"] and attribution_method != "none":
                 try:
                     full_dialogue_text = ""
@@ -280,7 +280,7 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
                         if msg["role"] == "user":
                             full_dialogue_text += f"{msg['content']}\n"
                     
-                    # 归因调用处：
+                    # Attribution entrypoint:
                     model_type = "llama" if "llama" in model_name.lower() else "qwen"
                     if attribution_method == "integrated_gradients":
                         html_snippet, filtered_tokens, rank_scores = integrated_gradients(model_hf, tokenizer, full_dialogue_text, out_prefix, mode="text", device=device, model_type=model_type, model_name=model_name)
@@ -292,7 +292,7 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
                         html_snippet, filtered_tokens, rank_scores = sae_attribution(model_hf, tokenizer, full_dialogue_text, out_prefix, mode="text", device=device, model_name=model_name, model_path=model_path, task=2, cycle_num=i+1)
                     else:
                         raise ValueError(f"不支持的归因方法: {attribution_method}")
-                    # 文件保存：
+                    # Persist outputs:
                     with open(out_html, "a", encoding="utf-8") as f_html, open(out_csv, "a", encoding="utf-8", newline='') as f_csv:
                         f_html.write(f"<h2>Cycle {i+1}</h2>\n" + html_snippet + "<hr/>\n")
                         f_csv.write(f"Cycle {i+1}\n")
@@ -311,7 +311,7 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
                         pass
                 except Exception as e:
                     log_explain(f"[Explain Error] {e}\n--------------------\n")
-                    print(f"Explain Error: {e}")  # 添加打印以便调试
+                    print(f"Explain Error: {e}")  # Extra print for debugging
             
             if cycle_success:
                 if mode == "direct":
@@ -339,7 +339,7 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
         log_explain(f"Results logged to: {explain_path}\n")
         log_explain("====================\n")
         
-        # 添加HTML文件尾部
+        # HTML footer fragment
         with open(out_html, "a", encoding="utf-8") as f_html:
             f_html.write("</body>\n</html>")
 

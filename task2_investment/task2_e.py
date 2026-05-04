@@ -127,7 +127,7 @@ def get_combined_dialogue(statements_group, mode="direct", model_name="", cot=0)
     assert statements_group in ['A', 'B']
     footer = prompt_footer_direct if mode == "direct" else prompt_footer_explain
     
-    # 为 Qwen 3 模型添加 /no_think 标签
+    # Insert /no_think for Qwen3 models
     if mode == "direct" and model_name and any(qwen_model in model_name.lower() for qwen_model in ["qwen3"]):
         footer += " /no_think"
     
@@ -186,14 +186,14 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
     file_path = os.path.join(output_dir, file_name)
     explain_path = os.path.join(explain_dir, file_name)
     
-    # 创建可解释性输出文件的头部
+    # Explainability output headers
     out_prefix = f"results/explainability/task2/model_{model_name}_mode_{mode}_explainability"
     out_html = out_prefix + ".html"
     out_csv = out_prefix + ".csv"
-    # 创建HTML文件头部
+    # HTML header fragment
     with open(out_html, "w", encoding="utf-8") as f_html:
         f_html.write("<!DOCTYPE html>\n<html>\n<head>\n<title>Task2 Explainability Results</title>\n</head>\n<body>\n")
-    # 创建CSV文件头部
+    # CSV header row
     with open(out_csv, "w", encoding="utf-8", newline='') as f_csv:
         f_csv.write("cycle,token,score\n")
     
@@ -269,8 +269,8 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
                         log_and_print(f"[{model_name}]\n{answer}\n--------------------\n")
                     cycle_success = True
                 
-                # ============ 可解释性归因分析 ============
-                # 只对用户的prompt进行归因
+                # ============ Explainability attribution ============
+                # Attribute user prompt only
                 if cycle_success and model not in gpt_list and attribution_method != "none":
                     try:
                         full_dialogue_text = ""
@@ -278,7 +278,7 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
                             if msg["role"] == "user":
                                 full_dialogue_text += f"{msg['content']}\n"
                         
-                        # 归因调用处：
+                        # Attribution entrypoint:
                         model_type = "llama" if "llama" in model_name.lower() else "qwen"
                         if attribution_method == "integrated_gradients":
                             html_snippet, filtered_tokens, rank_scores = integrated_gradients(model_hf, tokenizer, full_dialogue_text, out_prefix, mode="text", device=device, model_type=model_type, model_name=model_name)
@@ -308,7 +308,7 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
                             pass
                     except Exception as e:
                         log_explain(f"[Explain Error] {e}\n--------------------\n")
-                        print(f"Explain Error: {e}")  # 添加打印以便调试
+                        print(f"Explain Error: {e}")  # Extra print for debugging
                 
                 if cycle_success:
                     if mode == "direct":
@@ -337,7 +337,7 @@ def run_task(model="Qwen2.5-14B-Instruct", temperature=1, n_cycles=100, mode="di
         log_explain(f"Results logged to: {explain_path}\n")
         log_explain("====================\n")
     
-        # 添加HTML文件尾部
+        # HTML footer fragment
         with open(out_html, "a", encoding="utf-8") as f_html:
             f_html.write("</body>\n</html>")
 

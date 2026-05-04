@@ -3,7 +3,7 @@ import csv
 import numpy as np
 
 def score_to_color(score, model_type_str="llama"):
-    # 红色系，深浅随分数变化
+    # Red shades scale with score
     color_range = 0.95 if "llama" in model_type_str else 0.985
     intensity = abs(score)
     r = 255
@@ -29,17 +29,17 @@ def parse_cycles(csv_path):
         cycle_lines = lines[start:end]
         if len(cycle_lines) < 3:
             continue
-        token_score_lines = cycle_lines[2:]  # 跳过cycle和token,score
+        token_score_lines = cycle_lines[2:]  # Skip cycle and token,score header rows
         tokens = []
         scores = []
         for line in token_score_lines:
             line = line.strip()
             if not line:
                 continue
-            # 跳过标题行
+            # Skip header row
             if line.lower().startswith("cycle") or line.lower().startswith("token"):
                 continue
-            # 特殊处理逗号token
+            # Comma tokens special-cased
             if line.startswith(',,'):
                 token = ','
                 try:
@@ -47,7 +47,7 @@ def parse_cycles(csv_path):
                 except Exception:
                     continue
             else:
-                # 只分割第一个逗号
+                # Split on first comma only
                 parts = line.split(',', 1)
                 if len(parts) < 2:
                     continue
@@ -65,7 +65,7 @@ def parse_cycles(csv_path):
     return cycles
 
 def get_task_number_from_path(csv_path):
-    # 自动从路径中提取 task 编号
+    # Parse task id from path
     for part in csv_path.split(os.sep):
         if part.lower().startswith("task"):
             num = ''.join(filter(str.isdigit, part))

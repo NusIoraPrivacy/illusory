@@ -29,7 +29,7 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
     print("[Gradient] 开始梯度归因...")
     try:
         if isinstance(input_data, (Image.Image, np.ndarray, torch.Tensor)):
-            # 处理输入图像
+            # Process input image
             if isinstance(input_data, Image.Image):
                 img = input_data
             elif isinstance(input_data, np.ndarray):
@@ -40,22 +40,22 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
             img = img.resize((448, 448))
             img_array = np.array(img)
             
-            # 转换为tensor并设置requires_grad
+            # To tensor + requires_grad
             transform = T.Compose([
                 T.ToTensor(),
                 T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
-            # 确保输入和模型在同一个设备上
+            # Ensure inputs and model share device
             model_device = next(model.parameters()).device
             x = transform(img).unsqueeze(0).to(model_device).requires_grad_(True)
             
             print(f"[Gradient] 输入图像张量 shape: {x.shape}")
             
-            # 准备文本输入
+            # Prepare text input
             prompt = "What is in the image?"
             inputs = tokenizer_or_processor.tokenizer(prompt, return_tensors="pt").to(model_device)
             
-            # 前向传播获取logits
+            # Forward → logits
             outputs = model(
                 vision_inputs=x,
                 input_ids=inputs.input_ids,
@@ -63,26 +63,26 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
                 output_hidden_states=False,
                 return_dict=True
             )
-            logits = outputs.logits[:, -1, :]  # 最后一个token的logits
+            logits = outputs.logits[:, -1, :]  # Logits at last token
             
-            # 选择目标token
+            # Pick target token
             target_token_id = logits.argmax(dim=-1).item()
             score = logits[0, target_token_id]
             
             print(f"[Gradient] 目标token: {tokenizer_or_processor.tokenizer.convert_ids_to_tokens(target_token_id)}")
             
-            # 计算梯度
+            # Backprop gradients
             model.zero_grad()
             score.backward()
             
-            # 获取输入梯度
+            # Input gradients
             input_grad = x.grad.data.clone()
             
-            # 1. 普通梯度归因
+            # 1. Plain gradient attribution
             gradient_saliency = input_grad.abs().max(dim=1)[0].squeeze().cpu()
             gradient_saliency = (gradient_saliency - gradient_saliency.min()) / (gradient_saliency.max() - gradient_saliency.min())
             
-            # 2. 梯度×输入归因
+            # 2. Gradient × input attribution
             x_denorm = x.clone().detach()
             x_denorm = x_denorm * torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(model_device) + torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(model_device)
             x_denorm = torch.clamp(x_denorm, 0, 1)
@@ -90,13 +90,13 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
             gradient_input_saliency = (input_grad * x_denorm).abs().max(dim=1)[0].squeeze().cpu()
             gradient_input_saliency = (gradient_input_saliency - gradient_input_saliency.min()) / (gradient_input_saliency.max() - gradient_input_saliency.min())
             
-            # 3. 引导反向传播（简化版本）
+            # 3. Guided backprop (simplified)
             guided_grad = input_grad.clone()
             guided_grad[guided_grad < 0] = 0  # ReLU on gradients
             guided_saliency = guided_grad.abs().max(dim=1)[0].squeeze().cpu()
             guided_saliency = (guided_saliency - guided_saliency.min()) / (guided_saliency.max() - guided_saliency.min())
             
-            # 保存可视化结果
+            # Save visualizations
             if out_prefix:
                 model_folder = kwargs.get('model_name', 'unknown_model')
                 method_name = "gradient_saliency"
@@ -104,20 +104,20 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
                 os.makedirs(fig_dir, exist_ok=True)
                 base_name = os.path.basename(out_prefix)
                 
-                # 定义黑白colormap
+                # Grayscale colormap
                 bw_cmap = LinearSegmentedColormap.from_list("bw", ["black", "white"])
                 
-                # 1. 普通梯度归因
+                # 1. Plain gradient attribution
                 fig_grad, ax_grad = plt.subplots(1, 2, figsize=(20, 10))
-                # 左边：原始图像
+                # Left: original image
                 ax_grad[0].imshow(img_array)
                 ax_grad[0].set_title("Original Image", fontsize=16)
                 ax_grad[0].axis("off")
-                # 右边：梯度归因热力图
+                # Right: gradient heatmap
                 im_grad = ax_grad[1].imshow(gradient_saliency, cmap=bw_cmap)
                 ax_grad[1].set_title("Gradient Attribution", fontsize=16)
                 ax_grad[1].axis("off")
-                # 颜色条
+                # Colorbar
                 norm_grad = plt.Normalize(gradient_saliency.min(), gradient_saliency.max())
                 sm_grad = plt.cm.ScalarMappable(cmap=bw_cmap, norm=norm_grad)
                 sm_grad.set_array([])
@@ -127,17 +127,17 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
                 plt.savefig(os.path.join(fig_dir, f"{base_name}_gradient_comparison.png"), dpi=150, bbox_inches='tight')
                 plt.close()
                 
-                # 2. 梯度×输入归因
+                # 2. Gradient × input attribution
                 fig_grad_input, ax_grad_input = plt.subplots(1, 2, figsize=(20, 10))
-                # 左边：原始图像
+                # Left: original image
                 ax_grad_input[0].imshow(img_array)
                 ax_grad_input[0].set_title("Original Image", fontsize=16)
                 ax_grad_input[0].axis("off")
-                # 右边：梯度×输入归因热力图
+                # Right: grad×input heatmap
                 im_grad_input = ax_grad_input[1].imshow(gradient_input_saliency, cmap=bw_cmap)
                 ax_grad_input[1].set_title("Gradient × Input Attribution", fontsize=16)
                 ax_grad_input[1].axis("off")
-                # 颜色条
+                # Colorbar
                 norm_grad_input = plt.Normalize(gradient_input_saliency.min(), gradient_input_saliency.max())
                 sm_grad_input = plt.cm.ScalarMappable(cmap=bw_cmap, norm=norm_grad_input)
                 sm_grad_input.set_array([])
@@ -147,17 +147,17 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
                 plt.savefig(os.path.join(fig_dir, f"{base_name}_gradient_input_comparison.png"), dpi=150, bbox_inches='tight')
                 plt.close()
                 
-                # 3. 引导反向传播归因
+                # 3. Guided backprop attribution
                 fig_guided, ax_guided = plt.subplots(1, 2, figsize=(20, 10))
-                # 左边：原始图像
+                # Left: original image
                 ax_guided[0].imshow(img_array)
                 ax_guided[0].set_title("Original Image", fontsize=16)
                 ax_guided[0].axis("off")
-                # 右边：引导反向传播归因热力图
+                # Right: guided backprop heatmap
                 im_guided = ax_guided[1].imshow(guided_saliency, cmap=bw_cmap)
                 ax_guided[1].set_title("Guided Backpropagation Attribution", fontsize=16)
                 ax_guided[1].axis("off")
-                # 颜色条
+                # Colorbar
                 norm_guided = plt.Normalize(guided_saliency.min(), guided_saliency.max())
                 sm_guided = plt.cm.ScalarMappable(cmap=bw_cmap, norm=norm_guided)
                 sm_guided.set_array([])
@@ -167,27 +167,27 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
                 plt.savefig(os.path.join(fig_dir, f"{base_name}_guided_comparison.png"), dpi=150, bbox_inches='tight')
                 plt.close()
                 
-                # 4. 综合对比图
+                # 4. Combined comparison
                 fig_combined, axes = plt.subplots(2, 2, figsize=(20, 20))
                 
-                # 原图
+                # Original
                 axes[0, 0].imshow(img_array)
                 axes[0, 0].set_title("Original Image", fontsize=16)
                 axes[0, 0].axis("off")
                 
-                # 梯度归因
+                # Gradient attribution
                 im1 = axes[0, 1].imshow(gradient_saliency, cmap="hot")
                 axes[0, 1].set_title("Gradient Attribution", fontsize=16)
                 axes[0, 1].axis("off")
                 fig_combined.colorbar(im1, ax=axes[0, 1], fraction=0.046, pad=0.04)
                 
-                # 梯度×输入归因
+                # Grad × input attribution
                 im2 = axes[1, 0].imshow(gradient_input_saliency, cmap="hot")
                 axes[1, 0].set_title("Gradient × Input Attribution", fontsize=16)
                 axes[1, 0].axis("off")
                 fig_combined.colorbar(im2, ax=axes[1, 0], fraction=0.046, pad=0.04)
                 
-                # 引导反向传播归因
+                # Guided backprop attribution
                 im3 = axes[1, 1].imshow(guided_saliency, cmap="hot")
                 axes[1, 1].set_title("Guided Backpropagation Attribution", fontsize=16)
                 axes[1, 1].axis("off")
@@ -197,7 +197,7 @@ def gradient_saliency(model, tokenizer_or_processor, input_data, out_prefix, tar
                 plt.savefig(os.path.join(fig_dir, f"{base_name}_gradient_combined.png"), dpi=150, bbox_inches='tight')
                 plt.close()
                 
-                # 保存归因分数到文件
+                # Save attribution scores
                 scores_file = os.path.join(fig_dir, f"{base_name}_gradient_scores.txt")
                 with open(scores_file, 'w') as f:
                     f.write(f"Gradient attribution scores ({gradient_saliency.shape[0]}x{gradient_saliency.shape[1]})\n")

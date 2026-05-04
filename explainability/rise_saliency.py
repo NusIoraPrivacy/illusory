@@ -23,23 +23,23 @@ def _upsample_reflect(x, size, interpolate_mode="bilinear"):
         size = (size, size)
     assert len(size) == 2
     
-    # 确保是上采样
+    # Ensure upsampling mode
     for i, o_s in enumerate(orig_size):
         assert o_s <= size[i]
     
-    # 计算插值后每个输入单元的大小
+    # Cell size after interpolation resize
     cell_size = [int(np.ceil(s / orig_size[i])) for i, s in enumerate(size)]
     
-    # 计算带缓冲区的插值输入大小
+    # Interpolated input size incl. buffer
     pad_size = [int(cell_size[i] * (orig_size[i] + 2)) for i in range(len(orig_size))]
     
-    # 使用反射填充
+    # Reflect padding
     x_padded = F.pad(x, (1, 1, 1, 1), mode="reflect")
     
-    # 插值填充后的输入
+    # Input after interpolate+pad
     x_up = F.interpolate(x_padded, pad_size, mode=interpolate_mode, align_corners=False)
     
-    # 切片到目标大小
+    # Crop/slice to target size
     x_new = x_up[:, :, cell_size[0]:cell_size[0] + size[0], cell_size[1]:cell_size[1] + size[1]]
     
     return x_new
@@ -55,24 +55,24 @@ def generate_rise_masks(n_masks, input_size, num_cells=7, p=0.5, device="cpu"):
     """
     masks = torch.zeros(n_masks, 1, input_size[0], input_size[1], device=device)
     
-    # 计算低分辨率网格单元格大小
+    # Low-res grid cell size
     cell_size = tuple([int(np.ceil(s / num_cells)) for s in input_size])
     
-    # 计算上采样掩码的大小（输入大小 + 单元格大小）
+    # Upsampled mask size (input + cell)
     up_size = tuple([input_size[i] + cell_size[i] for i in range(2)])
     
     for i in range(n_masks):
-        # 生成低分辨率随机二进制掩码
+        # Random low-res binary mask
         grid = (torch.rand(1, 1, num_cells, num_cells, device=device) < p).float()
         
-        # 上采样低分辨率掩码到输入形状 + 缓冲区
+        # Upsample mask to input+buffer shape
         mask_up = _upsample_reflect(grid, up_size)
         
-        # 随机偏移
+        # Random shift offset
         shift_x = torch.randint(0, cell_size[0], (1,), device=device).item()
         shift_y = torch.randint(0, cell_size[1], (1,), device=device).item()
         
-        # 提取最终掩码
+        # Extract final mask
         masks[i] = mask_up[0, :, shift_x:shift_x + input_size[0], shift_y:shift_y + input_size[1]]
     
     return masks
@@ -103,7 +103,7 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
     print("[RISE] 开始图像归因...")
     try:
         if isinstance(input_data, (Image.Image, np.ndarray, torch.Tensor)):
-            # 处理输入图像
+            # Process input image
             if isinstance(input_data, Image.Image):
                 img = input_data
             elif isinstance(input_data, np.ndarray):
@@ -114,39 +114,39 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
             img = img.resize((448, 448))
             img_array = np.array(img)
             
-            # 转换为tensor
+            # Convert to tensor
             transform = T.Compose([
                 T.ToTensor(),
                 T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
-            # 确保输入和模型在同一个设备上
+            # Ensure inputs and model share device
             model_device = next(model.parameters()).device
             x = transform(img).unsqueeze(0).to(model_device)  # [1, 3, H, W]
             
             print(f"[RISE] 输入图像张量 shape: {x.shape}")
             
-            # 定义前向函数
+            # Forward closure
             def forward_fn(masked_img):
                 """
                 前向函数，计算目标类别的预测概率
                 """
                 masked_img = masked_img.to(model_device)
                 
-                # 使用image_processor处理图像
-                # 将tensor转换回PIL图像进行处理
+                # image_processor path
+                # Tensor → PIL for processor
                 masked_img_denorm = masked_img.clone()
                 masked_img_denorm = masked_img_denorm * torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(model_device) + torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(model_device)
                 masked_img_denorm = torch.clamp(masked_img_denorm, 0, 1)
                 
-                # 转换为PIL图像
+                # To PIL image
                 masked_img_pil = T.ToPILImage()(masked_img_denorm.squeeze(0))
                 
-                # 使用processor处理
+                # Run HF processor
                 processed = tokenizer_or_processor.image_processor(masked_img_pil, return_tensors="pt")
                 pixel_values = processed.pixel_values.to(model_device)
                 
-                # 确保pixel_values的数据类型与模型一致
-                # 检查模型的数据类型并匹配pixel_values
+                # Match pixel_values dtype to model
+                # Align dtypes
                 if hasattr(model, 'vision_model'):
                     model_dtype = next(model.vision_model.parameters()).dtype
                 elif hasattr(model, 'vision_tower'):
@@ -156,13 +156,13 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
                 else:
                     model_dtype = next(model.parameters()).dtype
                 
-                # 将pixel_values转换为与模型相同的数据类型
+                # Cast pixel_values
                 pixel_values = pixel_values.to(model_dtype)
                 
-                # 检查是否有image_grid_thw属性（Qwen2.5-VL特有）
+                # Optional image_grid_thw (Qwen2.5-VL)
                 if hasattr(processed, 'image_grid_thw'):
                     image_grid_thw = processed.image_grid_thw.to(model_device)
-                    # 前向传播 - Qwen2.5-VL模式
+                    # Forward — Qwen2.5-VL
                     with torch.no_grad():
                         if hasattr(model, 'vision_tower'):
                             vision_tower = model.vision_tower
@@ -172,7 +172,7 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
                             raise AttributeError(f"模型 {type(model).__name__} 没有找到视觉组件")
                         vision_output = vision_tower(pixel_values, image_grid_thw)
                 else:
-                    # 前向传播 - Llama-4-Scout模式
+                    # Forward — Llama-4-Scout
                     with torch.no_grad():
                         if hasattr(model, 'vision_model'):
                             vision_tower = model.vision_model
@@ -184,36 +184,36 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
                             raise AttributeError(f"模型 {type(model).__name__} 没有找到视觉组件")
                         vision_output = vision_tower(pixel_values)
                 
-                # 获取视觉特征（统一处理）
+                # Unified vision feature fetch
                 if hasattr(vision_output, 'last_hidden_state'):
                     visual_features = vision_output.last_hidden_state
                 elif isinstance(vision_output, torch.Tensor):
                     visual_features = vision_output
                 else:
-                    # 未知的视觉输出格式，抛出错误
+                    # Unknown vision outputs → error
                     raise ValueError(f"Unsupported vision output type: {type(vision_output)}")
                 
-                # 计算目标类别的预测分数
-                # 这里使用视觉特征的平均值作为预测分数
+                # Target-class score
+                # Proxy score = mean vision features
                 prediction_score = visual_features.mean()
                 
                 return prediction_score
             
             input_size = (x.shape[2], x.shape[3])  # (H, W)
             
-            # 生成RISE掩码
+            # Sample RISE masks
             masks = generate_rise_masks(n_masks, input_size, num_cells, p, model_device)
             
             print(f"[RISE] 使用 {n_masks} 个掩码计算归因...")
             
-            # 获取基准预测
+            # Baseline prediction
             with torch.no_grad():
                 baseline_score = forward_fn(x).item()
             
-            # 计算掩码预测并累积归因图
+            # Masked preds → accumulate map
             saliency = torch.zeros(1, input_size[0], input_size[1], device=model_device)
             
-            batch_size = 32  # 批处理大小
+            batch_size = 32  # Batch size
             num_batches = (n_masks + batch_size - 1) // batch_size
             
             for batch_idx in range(num_batches):
@@ -222,23 +222,23 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
                 batch_masks = masks[start_idx:end_idx]
                 
                 for i, mask in enumerate(batch_masks):
-                    # 应用掩码到图像
+                    # Apply mask to image
                     masked_img = x * mask
                     
-                    # 计算掩码预测
+                    # Masked forward prediction
                     with torch.no_grad():
                         masked_score = forward_fn(masked_img).item()
                     
-                    # 累积归因图
+                    # Accumulate attribution map
                     score_diff = masked_score - baseline_score
                     saliency += mask * score_diff
             
-            # 归一化
+            # Normalize
             saliency = saliency.squeeze().cpu().numpy()
             if saliency.max() > saliency.min():
                 saliency = (saliency - saliency.min()) / (saliency.max() - saliency.min())
             
-            # 保存可视化结果
+            # Save visualizations
             if out_prefix:
                 model_folder = kwargs.get('model_name', 'unknown_model')
                 method_name = "rise_saliency"
@@ -246,20 +246,20 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
                 os.makedirs(fig_dir, exist_ok=True)
                 base_name = os.path.basename(out_prefix)
                 
-                # 定义黑白colormap
+                # Grayscale colormap
                 bw_cmap = LinearSegmentedColormap.from_list("bw", ["black", "white"])
                 
-                # 1. 拼合图：左原图，右黑白热力图
+                # 1. Concat: original + B&W heatmap
                 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
-                # 左边：原始图像
+                # Left: original image
                 ax1.imshow(img_array)
                 ax1.set_title("Original Image", fontsize=16)
                 ax1.axis("off")
-                # 右边：RISE归因热力图
+                # Right: RISE heatmap
                 im2 = ax2.imshow(saliency, cmap=bw_cmap)
                 ax2.set_title("RISE Attribution Heatmap", fontsize=16)
                 ax2.axis("off")
-                # 颜色条
+                # Colorbar
                 norm = plt.Normalize(saliency.min(), saliency.max())
                 sm = plt.cm.ScalarMappable(cmap=bw_cmap, norm=norm)
                 sm.set_array([])
@@ -269,14 +269,14 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
                 plt.savefig(os.path.join(fig_dir, f"{base_name}_rise_comparison.png"), dpi=150, bbox_inches='tight')
                 plt.close()
                 
-                # 2. 叠加图：原图上叠加彩色热力图
+                # 2. Overlay heatmap on original
                 fig_overlay, ax_overlay = plt.subplots(figsize=(10, 10))
                 ax_overlay.imshow(img_array)
                 im_overlay = ax_overlay.imshow(saliency, cmap="hot", alpha=0.5)
                 ax_overlay.set_title("RISE Overlay Attribution")
                 ax_overlay.axis("off")
                 
-                # 为叠加图添加颜色条
+                # Colorbar on overlay
                 cbar_overlay = fig_overlay.colorbar(im_overlay, ax=ax_overlay, fraction=0.046, pad=0.04)
                 cbar_overlay.set_label("RISE Attribution Score", fontsize=12)
                 
@@ -284,7 +284,7 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
                 plt.savefig(os.path.join(fig_dir, f"{base_name}_rise_overlay.png"), dpi=150, bbox_inches='tight')
                 plt.close()
                 
-                # 3. 纯RISE归因图
+                # 3. RISE-only map
                 fig_rise, ax_rise = plt.subplots(figsize=(10, 10))
                 im_rise = ax_rise.imshow(saliency, cmap="viridis")
                 ax_rise.set_title("RISE Attribution Map", fontsize=16)
@@ -297,7 +297,7 @@ def rise_saliency(model, tokenizer_or_processor, input_data, out_prefix, target_
                 plt.savefig(os.path.join(fig_dir, f"{base_name}_rise_attribution.png"), dpi=150, bbox_inches='tight')
                 plt.close()
                 
-                # 保存RISE归因分数到文件
+                # Save RISE scores
                 rise_scores_file = os.path.join(fig_dir, f"{base_name}_rise_scores.txt")
                 with open(rise_scores_file, 'w') as f:
                     f.write(f"RISE attribution scores ({input_size[0]}x{input_size[1]})\n")

@@ -18,9 +18,9 @@ except ImportError:
 
 def process_dialogue_text(full_dialogue_text):
     """保留完整的对话历史，包含所有提示词"""
-    # 添加简单的结构验证打印
+    # Simple structural validation logging
     if full_dialogue_text:
-        # # 检查是否包含基本的prompt结构关键词
+        # # Check basic prompt keywords
         # has_instruction = any(keyword in full_dialogue_text.lower() for keyword in 
         #                     ['instruction', 'task', 'scenario', 'please'])
         # has_question = any(keyword in full_dialogue_text.lower() for keyword in 
@@ -86,24 +86,24 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
     if mode == "text" and isinstance(input_data, str):
         input_data = process_dialogue_text(input_data)
         
-        # 强制所有计算都在CPU上进行
+        # Force all compute on CPU
 
         
-        # 获取文本编码
+        # Encode text
         inputs = tokenizer_or_processor(input_data, return_tensors="pt", padding=True, truncation=True)
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
         tokens = inputs['input_ids']
         if tokens.dim() == 3:  # [1, 1, seq_len]
-            tokens = tokens.squeeze(0)  # 只移除第一个维度
+            tokens = tokens.squeeze(0)  # Remove first dim only
         elif tokens.dim() == 2:  # [1, seq_len]
-            tokens = tokens.squeeze(0)  # 移除batch维度
+            tokens = tokens.squeeze(0)  # Remove batch dimension
         
-        # 强制tokens到CPU
+        # Force tokens CPU
         tokens = tokens.to(device)
 
 
-        # 获取隐藏状态
+        # Hidden states
         with torch.no_grad():
             outputs = model(
                 input_ids=inputs['input_ids'], 
@@ -127,7 +127,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             target_hidden = projection(target_hidden)
             print(f"[SAE] 投影后shape: {target_hidden.shape}")
 
-        # 确保SAE计算在CPU上
+        # Run SAE on CPU
         target_hidden = target_hidden.to(device)
 
         
@@ -153,26 +153,26 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
         print(f"[SAE] 局部稀疏性: {local_sparsity:.4f}")
 
 
-        # 使用特征激活强度进行token归因（更标准的方法）
+        # Token attribution via feature activation strength (standard)
         token_attributions = torch.norm(feature_acts, dim=-1)
         token_attributions = token_attributions.squeeze().detach().cpu()
 
 
-        # 初始化html_snippet（现在由超简化HTML替代）
+        # html_snippet placeholder (replaced by minimal HTML)
         html_snippet = ""
         
-        # 保存可视化结果 - 为每个cycle生成唯一文件名
+        # Save viz with unique name per cycle
         if out_prefix:
-            # 构建路径：results/explainability/task{id}/sae_attribution/
+            # Path: results/explainability/task{id}/sae_attribution/
             fig_dir = os.path.join('results', 'explainability', f'task{task}', 'sae_attribution')
             os.makedirs(fig_dir, exist_ok=True)
             base_name = os.path.basename(out_prefix)
             
-            # 为每个cycle生成唯一的时间戳和cycle编号
+            # Unique timestamp + cycle id per run
             timestamp = int(time.time())
             cycle_suffix = f"_cycle{cycle_num}" if cycle_num is not None else f"_ts{timestamp}"
             
-            # 保存SAE配置信息
+            # Persist SAE config metadata
             config_file = os.path.join(fig_dir, f"{base_name}{cycle_suffix}_sae_config.txt")
             with open(config_file, 'w') as f:
                 f.write(f"SAE Configuration:\n")
@@ -189,10 +189,10 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             
             print(f"[SAE] 已保存配置信息到: {config_file}")
             
-            # 直接利用已有的feature_acts信息识别活跃特征
+            # Active features from existing feature_acts
             
             
-            # 检查feature_acts的维度
+            # Check feature_acts shape
             if len(feature_acts.shape) == 2:
                 # [batch_size, d_sae]
                 total_features = feature_acts.shape[1]
@@ -203,11 +203,11 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             else:
                 total_features = feature_acts.shape[-1]
             
-            # 确保feature_acts在正确的设备上
+            # feature_acts on correct device
             if feature_acts.device.type != device:
                 feature_acts = feature_acts.to(device)
             
-            # 计算每个特征的激活强度（使用L1范数）
+            # Per-feature strength (L1)
             feature_activations = []
             for i in range(total_features):
                 try:
@@ -218,7 +218,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                         # [batch_size, seq_len, d_sae]
                         activation_strength = torch.norm(feature_acts[:, :, i], p=1).item()
                     else:
-                        # 使用最后一个维度
+                        # Use last dimension
                         activation_strength = torch.norm(feature_acts[..., i], p=1).item()
                     feature_activations.append((i, activation_strength))
                 except Exception as e:
@@ -227,25 +227,25 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                     print(f"[SAE] 尝试访问的索引: {i}")
                     raise
             
-            # 按激活强度排序
+            # Sort by activation strength
             feature_activations.sort(key=lambda x: x[1], reverse=True)
             
-            # 根据局部稀疏性计算top特征数量
+            # top-k from local sparsity
             top_k = max(1, int((1 - local_sparsity) * total_features))
             # top_k = 1
-            top_k = min(top_k, total_features)  # 确保不超过总特征数
+            top_k = min(top_k, total_features)  # Clamp top-k to feature count
             top_features = [idx for idx, _ in feature_activations[:top_k]]
             
             print(f"[SAE] 局部稀疏性: {local_sparsity:.4f}, 直接识别出前{top_k}个最活跃特征 ({(1-local_sparsity)*100:.2f}% 的激活特征)")
             
-            # 使用教程中的正确方式生成可视化
+            # Tutorial-style visualization
             try:
                 from transformer_lens import HookedTransformer
-                # 强制使用CPU避免多GPU设备冲突
+                # CPU to avoid multi-GPU conflicts
                 print("[SAE] 正在加载HookedTransformer模型到CPU以避免多GPU冲突...")
                 hooked_model = HookedTransformer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct", device="cpu")
                 
-                # 根据参数决定是否生成最活跃特征子集
+                # Optional top-feature subset
                 if generate_top_features:
                     
 
@@ -255,15 +255,15 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                         minibatch_size_features=50,
                         minibatch_size_tokens=50,
                         verbose=True,
-                        device="cpu",  # 强制使用CPU避免多GPU冲突
+                        device="cpu",  # CPU fallback for GPU conflicts
                     )
-                    # 确保tokens有正确的形状 [batch_size, seq_length]并移动到CPU
+                    # tokens [B,T] on CPU
                     if tokens.dim() == 1:
-                        tokens_for_sae = tokens.unsqueeze(0).cpu()  # 添加batch维度并移动到CPU
+                        tokens_for_sae = tokens.unsqueeze(0).cpu()  # Add batch dim → CPU
                     else:
                         tokens_for_sae = tokens.cpu()
                     
-                    # 确保SAE模型也在CPU上
+                    # Keep SAE on CPU
                     sae_cpu = sae.cpu()
                     top_vis_data = SaeVisRunner(top_config).run(
                         encoder=sae_cpu,
@@ -274,9 +274,9 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                     save_feature_centric_vis(sae_vis_data=top_vis_data, filename=top_vis_file)
                     print(f"[SAE] 已生成原始SAE Dashboard: {top_vis_file}")
                     
-                    # 生成超简化HTML版本
+                    # Emit minimal HTML
                     try:
-                        # 确保tokens是正确的形状用于解码
+                        # Token tensor shape for decode
                         if tokens.dim() == 0:
                             tokens_for_decode = tokens.unsqueeze(0)
                         elif tokens.dim() == 1:
@@ -286,13 +286,13 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                         
                         token_texts = [tokenizer_or_processor.decode([token_id]) for token_id in tokens_for_decode.cpu().numpy()]
                         
-                        # 获取特征激活数据
+                        # Feature activation tensors
                         feature_acts_np = feature_acts[0].detach().cpu().numpy()  # [seq_len, num_features]
                         
-                        # 只取我们分析的特征
+                        # Subset analyzed features only
                         selected_feature_acts = feature_acts_np[:, top_features]  # [seq_len, len(top_features)]
                         
-                        # 生成超简化HTML
+                        # Minimal HTML export
                         simple_html = f"""
 <!DOCTYPE html>
 <html>
@@ -366,7 +366,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
     </div>
 """
                         
-                        # 为每个特征生成可视化
+                        # Viz each feature
                         for feat_idx, feature_id in enumerate(top_features):
                             feature_acts = selected_feature_acts[:, feat_idx]
                             
@@ -386,9 +386,9 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             <div class="token-container">
 """
                             
-                            # 添加每个token的激活信息（改进的颜色方案）
+                            # Per-token cells (improved palette)
                             for i, (token, activation) in enumerate(zip(token_texts, feature_acts)):
-                                # 计算颜色强度 (0-1)
+                                # Color intensity 0–1
                                 max_act = feature_acts.max()
                                 if max_act > 0:
                                     color_intensity = min(1.0, activation / max_act)
@@ -401,7 +401,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                                 else:
                                     normalized_intensity = 0
                                 
-                                # 红色渐变：从白色到红色
+                                # Red gradient white→red
                                 color_range = 0.97
                                 intensity = abs(normalized_intensity)
                                 r = 255
@@ -428,7 +428,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             <div class="activation-list">
 """
                             
-                            # 添加最活跃的token列表
+                            # List hottest tokens
                             top_indices = feature_acts.argsort()[-10:][::-1]
                             for i, idx in enumerate(top_indices):
                                 activation = feature_acts[idx]
@@ -450,7 +450,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
 </html>
 """
                         
-                        # 保存超简化HTML
+                        # Persist minimal HTML
                         simple_html_file = os.path.join(fig_dir, f"{base_name}{cycle_suffix}_top{top_k}_features_simple.html")
                         with open(simple_html_file, 'w', encoding='utf-8') as f:
                             f.write(simple_html)
@@ -461,7 +461,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                     
                     del top_vis_data
                     
-                    # 保存最活跃特征列表
+                    # Save top-feature list
                     top_features_file = os.path.join(fig_dir, f"{base_name}{cycle_suffix}_top{top_k}_features.txt")
                     with open(top_features_file, 'w') as f:
                         f.write(f"Top {top_k} Most Active Features\n")
@@ -479,7 +479,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                     
                     print(f"[SAE] 已保存最活跃特征列表: {top_features_file}")
                 
-                # 清理内存
+                # Free memory
                 del hooked_model
                 
             except Exception as e:
@@ -487,14 +487,14 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                 import traceback
                 traceback.print_exc()
                 
-            # 确保返回的是列表
+            # Ensure list return type
         if isinstance(rank_scores, (float, np.float64)):
             rank_scores = [rank_scores]
         if isinstance(filtered_tokens, (str, int, float)):
             filtered_tokens = [filtered_tokens]
         return html_snippet, filtered_tokens, rank_scores
 
-    ######## 图像归因 ########
+    ######## Image attribution ########
     elif mode == "image" and isinstance(input_data, (Image.Image, np.ndarray, torch.Tensor)):
         print(f"[SAE] 开始图像SAE归因分析...")
 
@@ -516,10 +516,10 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
         ])
         x = transform(img).unsqueeze(0).to(device)
 
-        # 按照教程使用HookedTransformer
+        # HookedTransformer per tutorial
         try:
             from transformer_lens import HookedTransformer
-            # HookedTransformer支持多GPU设置
+            # HookedTransformer multi-GPU capable
             if torch.cuda.device_count() > 1:
                 print(f"[SAE] 检测到 {torch.cuda.device_count()} 个GPU，HookedTransformer使用多GPU模式")
                 hooked_model = HookedTransformer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct", device_map="auto")
@@ -531,42 +531,42 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             print(f"[SAE] 无法加载HookedTransformer: {e}")
             raise RuntimeError("图像SAE分析需要HookedTransformer，请安装transformer-lens")
 
-        # 按照教程准备tokens和配置
+        # Tokens + cfg per tutorial
         prompt = "Describe the image."
         tokens = hooked_model.to_tokens(prompt)
 
-        # 按照教程正确访问hook点信息
-        hook_name = sae_id  # 直接使用sae_id作为hook点，而不是通过metadata访问
+        # Hook metadata per tutorial
+        hook_name = sae_id  # hook_point = sae_id string
         print(f"[SAE] 使用hook点: {hook_name}")
 
-        # 获取隐藏状态并计算稀疏性
+        # Hidden states + sparsity
         target_hidden = hooked_model.run_with_cache(tokens)[1][hook_name]
         feature_acts = sae.encode(target_hidden)
         reconstructed = sae.decode(feature_acts)
         
-        # 计算稀疏性指标
+        # Sparsity metrics
         local_sparsity = (feature_acts == 0).float().mean().item()
         l0 = (feature_acts > 0).float().sum(-1).detach()
         print(f"[SAE] 图像分析 - 局部稀疏性: {local_sparsity:.4f}, 平均L0: {l0.mean().item():.2f}")
         
-        # 直接利用已有的feature_acts信息识别活跃特征
+        # Active features from existing feature_acts
         print(f"[SAE] 基于稀疏性分析直接识别图像活跃特征...")
         print(f"[SAE] feature_acts shape: {feature_acts.shape}")
         print(f"[SAE] feature_acts dtype: {feature_acts.dtype}")
         print(f"[SAE] feature_acts device: {feature_acts.device}")
         
-        # 计算每个特征的激活强度（使用L1范数）
+        # Per-feature strength (L1)
         feature_activations = []
         total_features = feature_acts.shape[-1]
         print(f"[SAE] 总特征数: {total_features}")
         
-        # 确保feature_acts在正确的设备上
+        # feature_acts on correct device
         if feature_acts.device.type != device:
             feature_acts = feature_acts.to(device)
         
         for i in range(total_features):
             try:
-                # 计算该特征在所有token上的激活强度
+                # Per-token strength for feature
                 activation_strength = torch.norm(feature_acts[:, i], p=1).item()
                 feature_activations.append((i, activation_strength))
             except Exception as e:
@@ -574,60 +574,60 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                 print(f"[SAE] feature_acts[:, {i}] shape: {feature_acts[:, i].shape}")
                 raise
         
-        # 按激活强度排序
+        # Sort by activation strength
         feature_activations.sort(key=lambda x: x[1], reverse=True)
         
-        # 根据局部稀疏性计算top特征数量
+        # top-k from local sparsity
         top_k = max(1, int((1 - local_sparsity) * total_features))
         top_k = 10
-        top_k = min(top_k, total_features)  # 确保不超过总特征数
+        top_k = min(top_k, total_features)  # Clamp top-k to feature count
         top_features = [idx for idx, _ in feature_activations[:top_k]]
         
         print(f"[SAE] 局部稀疏性: {local_sparsity:.4f}, 直接识别出前{top_k}个最活跃特征 ({(1-local_sparsity)*100:.2f}% 的激活特征)")
 
-        # 保存可视化结果
+        # Save visualizations
         if out_prefix:
-            # 构建路径：results/explainability/task{id}/sae_attribution/
+            # Path: results/explainability/task{id}/sae_attribution/
             fig_dir = os.path.join('results', 'explainability', f'task{task}', 'sae_attribution')
             os.makedirs(fig_dir, exist_ok=True)
             
-            # 为每个cycle生成唯一文件名
+            # Unique filename per cycle
             timestamp = int(time.time())
             cycle_suffix = f"_cycle{cycle_num}" if cycle_num is not None else f"_ts{timestamp}"
             
-            # 根据参数决定是否生成最活跃特征子集
+            # Optional top-feature subset
             if generate_top_features:
-                # 直接生成最活跃特征的可视化，跳过完整特征分析
+                # Viz top features only
                 try:
                     print(f"[SAE] 开始生成图像最活跃特征子集可视化...")
                     
-                    # 创建最活跃特征的配置
+                    # Config for top features
                     top_config = SaeVisConfig(
                         hook_point=sae_id,
-                        features=top_features,  # 只分析最活跃的特征
+                        features=top_features,  # Analyze top activations only
                         minibatch_size_features=50,
                         minibatch_size_tokens=50,
                         verbose=False,
                         device=device,
                     )
 
-                    # 确保tokens有正确的形状 [batch_size, seq_length]并移动到CPU
+                    # tokens [B,T] on CPU
                     if tokens.dim() == 1:
-                        tokens_for_sae = tokens.unsqueeze(0).cpu()  # 添加batch维度并移动到CPU
+                        tokens_for_sae = tokens.unsqueeze(0).cpu()  # Add batch dim → CPU
                     else:
                         tokens_for_sae = tokens.cpu()
                     
-                    # 确保SAE模型也在CPU上
+                    # Keep SAE on CPU
                     sae_cpu = sae.cpu()
-                    # 生成最活跃特征的可视化
+                    # Render top-feature viz
                     top_vis_data = SaeVisRunner(top_config).run(encoder=sae_cpu, model=hooked_model, tokens=tokens_for_sae)
                     
-                    # 保存最活跃特征可视化
+                    # Save top-feature figure
                     top_vis_file = os.path.join(fig_dir, f"{os.path.basename(out_prefix)}{cycle_suffix}_top_features.html")
                     save_feature_centric_vis(sae_vis_data=top_vis_data, filename=top_vis_file)
                     print(f"[SAE] 已生成图像最活跃特征可视化: {top_vis_file}")
                     
-                    # 保存最活跃特征列表
+                    # Save top-feature list
                     top_features_file = os.path.join(fig_dir, f"{os.path.basename(out_prefix)}{cycle_suffix}_top_features.txt")
                     with open(top_features_file, 'w') as f:
                         f.write(f"Top {top_k} Most Active Features (Image Analysis)\n")
@@ -645,10 +645,10 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                     
                     print(f"[SAE] 已保存图像最活跃特征列表: {top_features_file}")
                     
-                    # 生成超简化HTML版本
+                    # Emit minimal HTML
                     try:
-                        # 获取token文本
-                        # 确保tokens是正确的形状用于解码
+                        # Decode token strings
+                        # Token tensor shape for decode
                         if tokens.dim() == 0:
                             tokens_for_decode = tokens.unsqueeze(0)
                         elif tokens.dim() == 1:
@@ -658,13 +658,13 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                         
                         token_texts = [tokenizer_or_processor.decode([token_id]) for token_id in tokens_for_decode.cpu().numpy()]
                         
-                        # 获取特征激活数据
+                        # Feature activation tensors
                         feature_acts_np = feature_acts[0].detach().cpu().numpy()  # [seq_len, num_features]
                         
-                        # 只取我们分析的特征
+                        # Subset analyzed features only
                         selected_feature_acts = feature_acts_np[:, top_features]  # [seq_len, len(top_features)]
                         
-                        # 生成超简化HTML
+                        # Minimal HTML export
                         simple_html = f"""
 <!DOCTYPE html>
 <html>
@@ -701,9 +701,9 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
         <div style="font-family: monospace; font-size: 12px; line-height: 1.4;">
 """
                         
-                        # 添加每个token的激活信息
+                        # Append per-token activations
                         for i, (token, activation) in enumerate(zip(token_texts, selected_feature_acts[:, 0])):
-                            # 计算颜色强度 (0-1)
+                            # Color intensity 0–1
                             max_act = selected_feature_acts[:, 0].max()
                             color_intensity = min(1.0, activation / max_act if max_act > 0 else 0)
                             
@@ -713,7 +713,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
                             else:
                                 normalized_intensity = 0
                             
-                            # 红色渐变：从白色到红色
+                            # Red gradient white→red
                             color_range = 0.97
                             intensity = abs(normalized_intensity)
                             r = 255
@@ -743,7 +743,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
         <div style="font-family: monospace; font-size: 12px;">
 """
                         
-                        # 添加最活跃的token列表
+                        # List hottest tokens
                         top_indices = selected_feature_acts[:, 0].argsort()[-10:][::-1]
                         for i, idx in enumerate(top_indices):
                             activation = selected_feature_acts[idx, 0]
@@ -762,7 +762,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
 </html>
 """
                         
-                        # 保存超简化HTML
+                        # Persist minimal HTML
                         simple_html_file = os.path.join(fig_dir, f"{base_name}{cycle_suffix}_top{top_k}_features_simple.html")
                         with open(simple_html_file, 'w', encoding='utf-8') as f:
                             f.write(simple_html)
@@ -783,12 +783,12 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             print(f"  - 激活特征数: {int((1 - local_sparsity) * total_features)}")
             print(f"  - 平均激活强度: {np.mean([score for _, score in feature_activations]):.4f}")
 
-        # 重构比较分析（使用之前已经计算的结果）
+        # Reconstruction compare (reuse tensors)
         reconstruction_error = torch.norm(target_hidden - reconstructed, dim=-1).mean().item()
         
         print(f"[SAE] 重构误差: {reconstruction_error:.6f}")
 
-        # 保存对比图
+        # Save comparison figure
         if out_prefix:
             fig, axs = plt.subplots(1, 2, figsize=(12, 6))
             axs[0].imshow(img_array)
@@ -796,8 +796,8 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             axs[0].axis('off')
             
             try:
-                # 尝试可视化重构结果
-                if reconstructed.shape[-1] == 3:  # RGB图像
+                # Try visualize reconstruction
+                if reconstructed.shape[-1] == 3:  # RGB image
                     reconstructed_img = reconstructed.detach().cpu().numpy()[0]
                     axs[1].imshow(reconstructed_img)
                 else:
@@ -809,7 +809,7 @@ def sae_attribution(model, tokenizer_or_processor, input_data, out_prefix, targe
             axs[1].axis('off')
             plt.tight_layout()
             
-            # 使用唯一文件名保存
+            # Save with unique filename
             timestamp = int(time.time())
             cycle_suffix = f"_cycle{cycle_num}" if cycle_num is not None else f"_ts{timestamp}"
             comparison_file = f"{out_prefix}{cycle_suffix}_reconstruction_comparison.png"
